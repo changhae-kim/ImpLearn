@@ -101,7 +101,7 @@ class Silanols():
                         vicinal_OH_pairs.append([OH1_group, OH2_group])
         return vicinal_OH_pairs
 
-    def carve_minimal_clusters(self, OH_bond_length):
+    def carve_minimal_clusters(self, OH_bond_length, reorder_podal_atoms=True):
 
         from ase import Atoms
         minimal_clusters = []
@@ -133,7 +133,7 @@ class Silanols():
                     if self.atoms[j] == 'Si' and j not in chasis_silicons:
                         chasis_silicons.append(j)
                         atoms.append('Si')
-                        coords.append(coords[len(peripheral_hydrogens)+n] + self.slab.get_distance(i, j, mic=True, vector=True))
+                        coords.append(coords[len(peripheral_hydrogens) + n] + self.slab.get_distance(i, j, mic=True, vector=True))
 
             chasis_oxygens = []
             podal_oxygens = []
@@ -149,15 +149,33 @@ class Silanols():
                     if self.atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens:
                         j_neighbors = self.bonds[1][self.bonds[0] == j]
                         if j_neighbors.shape[0] == 2:
+                            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
                             if numpy.intersect1d(chasis_silicons, j_neighbors).shape[0] >= 2:
                                 chasis_oxygens.append(j)
-                                atoms.insert(len(peripheral_hydrogens + peripheral_oxygens + chasis_oxygens) - 1, 'O')
-                                coords.insert(len(peripheral_hydrogens + peripheral_oxygens + chasis_oxygens) - 1,
-                                        coords[len(peripheral_hydrogens + peripheral_oxygens + chasis_oxygens) + n - 1] + self.slab.get_distance(i, j, mic=True, vector=True))
+                                atoms.insert(m, 'O')
+                                coords.insert(m, coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
                             else:
                                 podal_oxygens.append(j)
                                 atoms.append('O')
-                                coords.append(coords[len(peripheral_hydrogens + peripheral_oxygens + chasis_oxygens) + n] + self.slab.get_distance(i, j, mic=True, vector=True))
+                                coords.append(coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
+
+            if reorder_podal_atoms:
+                n = len(peripheral_hydrogens)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                p = m + len(chasis_silicons)
+                q = m + len(chasis_silicons) + len(podal_oxygens)
+                ordered = self.reorder_right_hand_rule(coords[p:q], coords[n+0], coords[n+1], coords[m+0], coords[m+1])
+                old_podals = podal_oxygens
+                old_coords = coords
+                podal_oxygens = []
+                coords = []
+                for coord in old_coords[:p]:
+                    coords.append(coord)
+                for i in ordered:
+                    podal_oxygens.append(old_podals[i])
+                    coords.append(old_coords[p:q][i])
+                for coord in old_coords[q:]:
+                    coords.append(coord)
 
             podal_hydrogens = []
             for n, i in enumerate(podal_oxygens):
@@ -170,21 +188,73 @@ class Silanols():
                             print('carve_minimal_clusters(): O {:d} is bonded to O {:d}'.format(i+1, self.atoms[j], j+1))
                 for j in i_neighbors:
                     if j not in peripheral_hydrogens + chasis_silicons:
+                        m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
                         if self.atoms[j] == 'H':
                             podal_hydrogens.append(j)
                             atoms.append('H')
-                            coords.append(coords[len(peripheral_hydrogens + peripheral_oxygens + chasis_oxygens + chasis_silicons) + n] + self.slab.get_distance(i, j, mic=True, vector=True))
+                            coords.append(coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
                         elif self.atoms[j] == 'Si':
                             podal_hydrogens.append(j)
                             atoms.append('H')
                             axis = self.slab.get_distance(i, j, mic=True, vector=True)
                             axis = axis / numpy.linalg.norm(axis)
-                            coords.append(coords[len(peripheral_hydrogens + peripheral_oxygens + chasis_oxygens + chasis_silicons) + n] + axis * OH_bond_length)
+                            coords.append(coords[m + n] + axis * OH_bond_length)
 
             cluster = Atoms(atoms, coords)
             minimal_clusters.append(cluster)
 
         return minimal_clusters
+
+    def reorder_right_hand_rule(self, coords, O1_coord, O2_coord, Si1_coord, Si2_coord):
+
+        origin = 0.5 * (Si1_coord + Si2_coord)
+        centered = coords - origin
+        xaxis = Si2_coord - Si1_coord
+        xaxis = xaxis / numpy.linalg.norm(xaxis)
+        zaxis = 0.5 * (O1_coord + O2_coord - Si1_coord - Si2_coord)
+        zaxis = zaxis / numpy.linalg.norm(zaxis)
+        yaxis = numpy.cross(zaxis, xaxis)
+
+        if len(coords) == 2:
+            ordered = []
+            ranking = numpy.argsort(numpy.einsum('ij,j->i', centered, + xaxis)),
+            for i in ranking:
+                ordered.append(i)
+
+        elif len(coords) == 4:
+            ordered = []
+            rankings = [
+                    numpy.argsort(numpy.einsum('ij,j->i', centered, + xaxis - yaxis)),
+                    numpy.argsort(numpy.einsum('ij,j->i', centered, + xaxis + yaxis)),
+                    numpy.argsort(numpy.einsum('ij,j->i', centered, - xaxis + yaxis)),
+                    numpy.argsort(numpy.einsum('ij,j->i', centered, - xaxis - yaxis)),
+                    ]
+            for ranking in rankings:
+                for i in ranking:
+                    if i not in ordered:
+                        ordered.append(i)
+                        break
+
+        elif len(coords) == 6:
+            centered1 = coords - Si1_coord
+            zaxis1 = O1_coord - Si1_coord
+            zaxis1 = zaxis1 / numpy.linalg.norm(zaxis1)
+            ordered1 = [i for i in range(0, 3)]
+            if numpy.dot(numpy.cross(zaxis1, centered1[ordered1[1]]), centered1[ordered1[2]]) < 0.0:
+                ordered1[1], ordered1[2] = ordered1[2], ordered1[1]
+            centered2 = coords - Si2_coord
+            zaxis2 = O2_coord - Si2_coord
+            zaxis2 = zaxis2 / numpy.linalg.norm(zaxis2)
+            ordered2 = [i for i in range(3, 6)]
+            if numpy.dot(numpy.cross(zaxis2, centered2[ordered2[1]]), centered2[ordered2[2]]) < 0.0:
+                ordered2[1], ordered2[2] = ordered2[2], ordered2[1]
+            dists = [[numpy.linalg.norm(centered[i]-centered[j]) for j in ordered2] for i in ordered1]
+            nm = numpy.argmin(dists)
+            n = nm//3
+            m = nm%3
+            ordered = [ordered1[(n+1+i)%3] for i in range(3)] + [ordered2[(m+i)%3] for i in range(3)]
+
+        return ordered
 
     def export_clusters(self, file_path, file_type):
         from ase.io import write
@@ -212,23 +282,25 @@ class Silanols():
         return
 
 
-clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/E_117SiO2_14_H2O', 'vasp')
-print('--- MAIN ---')
-print('clusters.atoms')
-print(clusters.atoms)
-print('clusters.bonds')
-print(clusters.bonds)
-print('clusters.coords')
-print(clusters.coords)
-print('clusters.OH_groups')
-print(len(clusters.OH_groups))
-print(clusters.OH_groups)
-print('clusters.geminal_OH_pairs')
-print(len(clusters.geminal_OH_pairs))
-print(clusters.geminal_OH_pairs)
-print('clusters.vicinal_OH_pairs')
-print(len(clusters.vicinal_OH_pairs))
-print(clusters.vicinal_OH_pairs)
-clusters.analyze_distances('E_d{:s}{:s}.png')
-clusters.export_clusters('E_s{:04d}.xyz', 'xyz')
+if __name__ == '__main__':
+
+    clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/A_117SiO2_35H2O', 'vasp')
+    print('--- MAIN ---')
+    print('clusters.atoms')
+    print(clusters.atoms)
+    print('clusters.bonds')
+    print(clusters.bonds)
+    print('clusters.coords')
+    print(clusters.coords)
+    print('clusters.OH_groups')
+    print(len(clusters.OH_groups))
+    print(clusters.OH_groups)
+    print('clusters.geminal_OH_pairs')
+    print(len(clusters.geminal_OH_pairs))
+    print(clusters.geminal_OH_pairs)
+    print('clusters.vicinal_OH_pairs')
+    print(len(clusters.vicinal_OH_pairs))
+    print(clusters.vicinal_OH_pairs)
+    clusters.analyze_distances('A_d{:s}{:s}.png')
+    clusters.export_clusters('A_s{:04d}.xyz', 'xyz')
 
