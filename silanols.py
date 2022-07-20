@@ -148,16 +148,15 @@ class Silanols():
                 for j in i_neighbors:
                     if self.atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens:
                         j_neighbors = self.bonds[1][self.bonds[0] == j]
-                        if j_neighbors.shape[0] == 2:
-                            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
-                            if numpy.intersect1d(chasis_silicons, j_neighbors).shape[0] >= 2:
-                                chasis_oxygens.append(j)
-                                atoms.insert(m, 'O')
-                                coords.insert(m, coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
-                            else:
-                                podal_oxygens.append(j)
-                                atoms.append('O')
-                                coords.append(coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
+                        m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                        if numpy.intersect1d(chasis_silicons, j_neighbors).shape[0] >= 2:
+                            chasis_oxygens.append(j)
+                            atoms.insert(m, 'O')
+                            coords.insert(m, coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
+                        else:
+                            podal_oxygens.append(j)
+                            atoms.append('O')
+                            coords.append(coords[m + n] + self.slab.get_distance(i, j, mic=True, vector=True))
 
             if reorder_podal_atoms:
                 n = len(peripheral_hydrogens)
@@ -215,48 +214,55 @@ class Silanols():
         zaxis = zaxis / numpy.linalg.norm(zaxis)
         yaxis = numpy.cross(zaxis, xaxis)
 
-        if len(coords) == 2:
-            ordered = []
-            ranking = numpy.argsort(numpy.einsum('ij,j->i', centered, + xaxis)),
-            for i in ranking:
-                ordered.append(i)
-
-        elif len(coords) == 4:
-            ordered = []
-            rankings = [
-                    numpy.argsort(numpy.einsum('ij,j->i', centered, + xaxis - yaxis)),
-                    numpy.argsort(numpy.einsum('ij,j->i', centered, + xaxis + yaxis)),
-                    numpy.argsort(numpy.einsum('ij,j->i', centered, - xaxis + yaxis)),
-                    numpy.argsort(numpy.einsum('ij,j->i', centered, - xaxis - yaxis)),
-                    ]
-            for ranking in rankings:
-                for i in ranking:
-                    if i not in ordered:
-                        ordered.append(i)
-                        break
-
-        elif len(coords) == 6:
-            centered1 = coords - Si1_coord
-            zaxis1 = O1_coord - Si1_coord
-            zaxis1 = zaxis1 / numpy.linalg.norm(zaxis1)
-            ordered1 = [i for i in range(0, 3)]
-            if numpy.dot(numpy.cross(zaxis1, centered1[ordered1[1]]), centered1[ordered1[2]]) < 0.0:
-                ordered1[1], ordered1[2] = ordered1[2], ordered1[1]
-            centered2 = coords - Si2_coord
-            zaxis2 = O2_coord - Si2_coord
-            zaxis2 = zaxis2 / numpy.linalg.norm(zaxis2)
-            ordered2 = [i for i in range(3, 6)]
-            if numpy.dot(numpy.cross(zaxis2, centered2[ordered2[1]]), centered2[ordered2[2]]) < 0.0:
-                ordered2[1], ordered2[2] = ordered2[2], ordered2[1]
-            dists = [[numpy.linalg.norm(centered[i]-centered[j]) for j in ordered2] for i in ordered1]
-            nm = numpy.argmin(dists)
-            n = nm//3
-            m = nm%3
-            ordered = [ordered1[(n+1+i)%3] for i in range(3)] + [ordered2[(m+i)%3] for i in range(3)]
-
-        else:
+        if len(coords) not in [2, 4, 6]:
             print('number of podal oxygens is {:d}'.format(len(coords)))
-            ordered = [i for i, coord in enumerate(coords)]
+
+        centered1 = coords - Si1_coord
+        centered2 = coords - Si2_coord
+        ordered1 = []
+        ordered2 = []
+        for i, (coord1, coord2) in enumerate(zip(centered1, centered2)):
+            if numpy.linalg.norm(coord1) < numpy.linalg.norm(coord2):
+                ordered1.append(i)
+            else:
+                ordered2.append(i)
+
+        zaxis1 = O1_coord - Si1_coord
+        zaxis1 = zaxis1 / numpy.linalg.norm(zaxis1)
+        status = -1
+        while status == -1:
+            status = 0
+            for i, j in enumerate(ordered1[:-1]):
+                if numpy.dot(numpy.cross(zaxis1, centered1[ordered1[i]]), centered1[ordered1[i+1]]) < 0.0:
+                    ordered1[i], ordered1[i+1] = ordered1[i+1], ordered1[i]
+                    status = -1
+                    break
+
+        zaxis2 = O2_coord - Si2_coord
+        zaxis2 = zaxis2 / numpy.linalg.norm(zaxis2)
+        status = -1
+        while status == -1:
+            status = 0
+            for i, j in enumerate(ordered2[:-1]):
+                if numpy.dot(numpy.cross(zaxis2, centered2[ordered2[i]]), centered2[ordered2[i+1]]) < 0.0:
+                    ordered2[i], ordered2[i+1] = ordered2[i+1], ordered2[i]
+                    status = -1
+                    break
+
+        if len(ordered1) > 2:
+            if len(ordered2) > 2:
+                nm = numpy.argmin([numpy.linalg.norm(centered[i]-centered[j]) for i in ordered1 for j in ordered2])
+                n = nm//len(ordered2)
+                m = nm%len(ordered2)
+                ordered1 = [ordered1[(n+1+i)%len(ordered1)] for i, j in enumerate(ordered1)]
+                ordered2 = [ordered2[(m+i)%len(ordered2)] for i, j in enumerate(ordered2)]
+            else:
+                n = numpy.argmin([numpy.linalg.norm(centered[i]-centered[0]) for i in ordered1])
+                ordered1 = [ordered1[(n+1+i)%len(ordered1)] for i, j in enumerate(ordered1)]
+        elif len(ordered2) > 2:
+            m = numpy.argmin([numpy.linalg.norm(centered[ordered1[-1]]-centered[j]) for j in ordered2])
+            ordered2 = [ordered2[(m+i)%len(ordered2)] for i, j in enumerate(ordered2)]
+        ordered = ordered1 + ordered2
 
         return ordered
 
@@ -290,9 +296,9 @@ if __name__ == '__main__':
 
     # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/A_117SiO2_35H2O', 'vasp')
     # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/C_117SiO2_29H2O', 'vasp')
-    clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/D_117SiO2_22H2O', 'vasp')
+    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/D_117SiO2_22H2O', 'vasp')
     # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/E_117SiO2_14H2O', 'vasp')
-    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/F_117SiO2_10H2O', 'vasp')
+    clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/F_117SiO2_10H2O', 'vasp')
     print('--- MAIN ---')
     print('clusters.atoms')
     print(clusters.atoms)
