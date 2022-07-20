@@ -254,6 +254,10 @@ class Silanols():
             m = nm%3
             ordered = [ordered1[(n+1+i)%3] for i in range(3)] + [ordered2[(m+i)%3] for i in range(3)]
 
+        else:
+            print('number of podal oxygens is {:d}'.format(len(coords)))
+            ordered = [i for i, coord in enumerate(coords)]
+
         return ordered
 
     def export_clusters(self, file_path, file_type):
@@ -284,7 +288,11 @@ class Silanols():
 
 if __name__ == '__main__':
 
-    clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/A_117SiO2_35H2O', 'vasp')
+    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/A_117SiO2_35H2O', 'vasp')
+    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/C_117SiO2_29H2O', 'vasp')
+    clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/D_117SiO2_22H2O', 'vasp')
+    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/E_117SiO2_14H2O', 'vasp')
+    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous Catalysts/Slabs/Tielens/F_117SiO2_10H2O', 'vasp')
     print('--- MAIN ---')
     print('clusters.atoms')
     print(clusters.atoms)
@@ -301,6 +309,6 @@ if __name__ == '__main__':
     print('clusters.vicinal_OH_pairs')
     print(len(clusters.vicinal_OH_pairs))
     print(clusters.vicinal_OH_pairs)
-    clusters.analyze_distances('A_d{:s}{:s}.png')
-    clusters.export_clusters('A_s{:04d}.xyz', 'xyz')
+    # clusters.analyze_distances('D_d{:s}{:s}.png')
+    # clusters.export_clusters('D_s{:04d}.xyz', 'xyz')
 
