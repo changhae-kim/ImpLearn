@@ -5,23 +5,17 @@ class Silanols():
 
     def __init__(self, file_path, file_type, bond_cutoffs=None, vicinal_cutoff=None, OH_bond_length=None):
 
-        if bond_cutoffs is not None:
-            self.bond_cutoffs = bond_cutoffs
-        else:
+        if bond_cutoffs is None:
             # self.bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 1.5, ('Si', 'O'): 2.3, ('O', 'H'): 1.15}
-            self.bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2}
+            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2}
 
-        if vicinal_cutoff is not None:
-            self.vicinal_cutoff = vicinal_cutoff
-        else:
-            self.vicinal_cutoff = 4.5
+        if vicinal_cutoff is None:
+            vicinal_cutoff = 4.5
 
-        if OH_bond_length is not None:
-            self.OH_bond_length = OH_bond_length
-        else:
-            self.OH_bond_length = 0.96
+        if OH_bond_length is None:
+            OH_bond_length = 0.96
 
-        self.slab, self.bonds = self.load_slab(file_path, file_type, self.bond_cutoffs)
+        self.slab, self.bonds = self.load_slab(file_path, file_type, bond_cutoffs)
 
         self.atoms = self.slab.get_chemical_symbols()
         self.coords = self.slab.get_positions()
@@ -30,8 +24,8 @@ class Silanols():
 
         self.OH_groups = self.find_OH_groups()
         self.geminal_OH_pairs = self.find_geminal_OH_pairs()
-        self.vicinal_OH_pairs = self.find_vicinal_OH_pairs(self.vicinal_cutoff)
-        self.minimal_clusters = self.carve_minimal_clusters(self.OH_bond_length)
+        self.vicinal_OH_pairs = self.find_vicinal_OH_pairs(vicinal_cutoff)
+        self.minimal_clusters = self.carve_minimal_clusters(OH_bond_length)
 
         return
 
@@ -204,7 +198,7 @@ class Silanols():
 
         return minimal_clusters
 
-    def reorder_right_hand_rule(self, coords, O1_coord, O2_coord, Si1_coord, Si2_coord):
+    def reorder_right_hand_rule(self, coords, O1_coord, O2_coord, Si1_coord, Si2_coord, max_iter=50):
 
         origin = 0.5 * (Si1_coord + Si2_coord)
         centered = coords - origin
@@ -230,7 +224,7 @@ class Silanols():
         zaxis1 = O1_coord - Si1_coord
         zaxis1 = zaxis1 / numpy.linalg.norm(zaxis1)
         status = -1
-        while status == -1:
+        for i in range(max_iter)
             status = 0
             for i, j in enumerate(ordered1[:-1]):
                 if numpy.dot(numpy.cross(zaxis1, centered1[ordered1[i]]), centered1[ordered1[i+1]]) < 0.0:
