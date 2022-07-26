@@ -6,27 +6,20 @@ from ase.neighborlist import neighbor_list
 
 class Phillips():
 
-    def __init__(self, file_path, file_type, peripheral_oxygens, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None):
+    def __init__(self, file_path, file_type, peripheral_oxygens,
+            bond_cutoffs={
+                ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
+                ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2
+                },
+            bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
+            ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09}
+            ):
 
-        if bond_cutoffs is not None:
-            self.bond_cutoffs = bond_cutoffs
-        else:
-            self.bond_cutoffs = {
-                    ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
-                    ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2,
-                    }
+        self.bond_cutoffs = bond_cutoffs
+        self.bond_lengths = bond_lengths
+        self.ethylene_bond_lengths = ethylene_bond_lengths
 
-        if bond_lengths is not None:
-            self.bond_lengths = bond_lengths
-        else:
-            self.bond_lengths = {('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09}
-
-        if ethylene_bond_lengths is not None:
-            self.ethylene_bond_lengths = ethylene_bond_lengths
-        else:
-            self.ethylene_bond_lengths = {('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09}
-
-        self.cluster = self.load_cluster(file_path, file_type)
+        self.cluster = self.import_cluster(file_path, file_type)
 
         for n, i in enumerate(peripheral_oxygens):
             if i < 0:
@@ -43,7 +36,7 @@ class Phillips():
 
         return
 
-    def load_cluster(self, file_path, file_type):
+    def import_cluster(self, file_path, file_type):
         from ase.io import read
         cluster = read(file_path, 0, file_type)
         return cluster
@@ -108,17 +101,6 @@ class Phillips():
 
         return chromium_cluster
 
-    def rotate_vector(self, vector, axis, angle, degrees=True):
-        normal = axis / numpy.linalg.norm(axis)
-        parallel = numpy.inner(vector, normal) * normal
-        perpendicular1 = vector - parallel
-        perpendicular2 = numpy.cross(normal, perpendicular1)
-        if degrees:
-            rotated = parallel + perpendicular1 * numpy.cos(numpy.pi*angle/180.0) + perpendicular2 * numpy.sin(numpy.pi*angle/180.0)
-        else:
-            rotated = parallel + perpendicular1 * numpy.cos(angle) + perpendicular2 * numpy.sin(angle)
-        return rotated
-
     def add_alkyl(self, cluster, ncarbons, point_y=True, rotate_2=False):
 
         atoms = cluster.get_chemical_symbols()
@@ -132,45 +114,6 @@ class Phillips():
                 Cr_index = i
                 Cr_coord = coord
 
-        '''
-        if point_y:
-            tilts = [
-                    self.axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + self.axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
-                    self.axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) + self.axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
-                    ]
-        else:
-            tilts = [
-                    self.axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - self.axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
-                    self.axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - self.axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
-                    ]
-
-        C_coords = [Cr_coord + tilts[0] * self.bond_lengths[('Cr', 'C')]]
-        for i in range(1, ncarbons):
-            if i == 2:
-                C_coords.append(C_coords[-1] + self.rotate_vector(tilts[(i-0)%len(tilts)], tilts[(i-1)%len(tilts)], -120.0) * self.bond_lengths[('C', 'C')])
-            else:
-                C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * self.bond_lengths[('C', 'C')])
-        H_coords = []
-        for i in range(0, ncarbons):
-            if i == 1:
-                if i == ncarbons-1:
-                    H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], tilts[(i+0)%len(tilts)], -120.0) * self.bond_lengths[('C', 'H')])
-                H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], tilts[(i+0)%len(tilts)], +120.0) * self.bond_lengths[('C', 'H')])
-                H_coords.append(C_coords[i] + tilts[(i+1)%len(tilts)] * self.bond_lengths[('C', 'H')])
-            elif i == 2:
-                if i == ncarbons-1:
-                    H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * self.bond_lengths[('C', 'H')])
-                H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], self.rotate_vector(tilts[(i-0)%len(tilts)], tilts[(i-1)%len(tilts)], -120.0), -120.0) * self.bond_lengths[('C', 'H')])
-                H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], self.rotate_vector(tilts[(i-0)%len(tilts)], tilts[(i-1)%len(tilts)], -120.0), +120.0) * self.bond_lengths[('C', 'H')])
-            else:
-                if i == ncarbons-1:
-                    H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], tilts[(i+0)%len(tilts)], +120.0) * self.bond_lengths[('C', 'H')])
-                    H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * self.bond_lengths[('C', 'H')])
-                    H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], tilts[(i+0)%len(tilts)], -120.0) * self.bond_lengths[('C', 'H')])
-                else:
-                    H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], tilts[(i+0)%len(tilts)], -120.0) * self.bond_lengths[('C', 'H')])
-                    H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], tilts[(i+0)%len(tilts)], +120.0) * self.bond_lengths[('C', 'H')])
-        '''
         if point_y:
             tilts = [
                     self.axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + self.axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
@@ -287,21 +230,31 @@ class Phillips():
 
         return ethylene_cluster
 
+    def rotate_vector(self, vector, axis, angle, degrees=True):
+        normal = axis / numpy.linalg.norm(axis)
+        parallel = numpy.inner(vector, normal) * normal
+        perpendicular1 = vector - parallel
+        perpendicular2 = numpy.cross(normal, perpendicular1)
+        if degrees:
+            rotated = parallel + perpendicular1 * numpy.cos(numpy.pi*angle/180.0) + perpendicular2 * numpy.sin(numpy.pi*angle/180.0)
+        else:
+            rotated = parallel + perpendicular1 * numpy.cos(angle) + perpendicular2 * numpy.sin(angle)
+        return rotated
+
     def export_clusters(self, file_path, file_type):
         from ase.io import write
-        write(file_path.format('chromium'), self.chromium_cluster, format=file_type)
-        write(file_path.format('L_ethyl'), self.L_ethyl_cluster, format=file_type)
-        write(file_path.format('L_ethyl_ethylene'), self.L_ethyl_ethylene_cluster, format=file_type)
-        write(file_path.format('R_butyl'), self.R_butyl_cluster, format=file_type)
-        write(file_path.format('R_ethyl'), self.R_ethyl_cluster, format=file_type)
-        write(file_path.format('R_ethyl_ethylene'), self.R_ethyl_ethylene_cluster, format=file_type)
-        write(file_path.format('L_butyl'), self.L_butyl_cluster, format=file_type)
+        write(file_path.format('L_ethyl'), self.L_ethyl_cluster, file_type)
+        write(file_path.format('L_ethyl_R_ethylene'), self.L_ethyl_ethylene_cluster, file_type)
+        write(file_path.format('R_butyl'), self.R_butyl_cluster, file_type)
+        write(file_path.format('R_ethyl'), self.R_ethyl_cluster, file_type)
+        write(file_path.format('R_ethyl_L_ethylene'), self.R_ethyl_ethylene_cluster, file_type)
+        write(file_path.format('L_butyl'), self.L_butyl_cluster, file_type)
         return
 
 
 if __name__ == '__main__':
 
-    clusters = Phillips('save/A_s0000.xyz', 'xyz', [2, 3])
+    clusters = Phillips('output_silanols/A_0000.xyz', 'xyz', [2, 3])
     print('--- MAIN ---')
-    clusters.export_clusters('A_p0000_{:s}.xyz', 'xyz')
+    clusters.export_clusters('A_0000_{:s}.xyz', 'xyz')
 
