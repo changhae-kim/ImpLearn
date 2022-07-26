@@ -26,12 +26,12 @@ class Phillips():
                 peripheral_oxygens[n] = len(self.slab.get_chemical_symbols()) + i
 
         self.axes = self.define_axes(self.cluster, peripheral_oxygens)
-        self.chromium_cluster = self.add_chrom(self.cluster, peripheral_oxygens)
+        self.chromium_cluster = self.add_chromium(self.cluster, peripheral_oxygens)
         self.L_ethyl_cluster = self.add_alkyl(self.chromium_cluster, 2, point_y=True, rotate_2=False)
-        self.L_ethyl_ethylene_cluster = self.add_ethylene(self.L_ethyl_cluster, point_y=False)
+        self.L_ethyl_R_ethylene_cluster = self.add_ethylene(self.L_ethyl_cluster, point_y=False)
         self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=False, rotate_2=True)
         self.R_ethyl_cluster = self.add_alkyl(self.chromium_cluster, 2, point_y=False, rotate_2=False)
-        self.R_ethyl_ethylene_cluster = self.add_ethylene(self.R_ethyl_cluster, point_y=True)
+        self.R_ethyl_L_ethylene_cluster = self.add_ethylene(self.R_ethyl_cluster, point_y=True)
         self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=True, rotate_2=True)
 
         return
@@ -66,7 +66,7 @@ class Phillips():
 
         return axes
 
-    def add_chrom(self, cluster, peripheral_oxygens):
+    def add_chromium(self, cluster, peripheral_oxygens):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -231,23 +231,23 @@ class Phillips():
         return ethylene_cluster
 
     def rotate_vector(self, vector, axis, angle, degrees=True):
-        normal = axis / numpy.linalg.norm(axis)
-        parallel = numpy.inner(vector, normal) * normal
-        perpendicular1 = vector - parallel
-        perpendicular2 = numpy.cross(normal, perpendicular1)
+        unit = axis / numpy.linalg.norm(axis)
+        parallel = numpy.inner(vector, unit) * unit
+        perpend1 = vector - parallel
+        perpend2 = numpy.cross(unit, perpend1)
         if degrees:
-            rotated = parallel + perpendicular1 * numpy.cos(numpy.pi*angle/180.0) + perpendicular2 * numpy.sin(numpy.pi*angle/180.0)
+            rotated = parallel + perpend1 * numpy.cos(numpy.pi*angle/180.0) + perpend2 * numpy.sin(numpy.pi*angle/180.0)
         else:
-            rotated = parallel + perpendicular1 * numpy.cos(angle) + perpendicular2 * numpy.sin(angle)
+            rotated = parallel + perpend1 * numpy.cos(angle) + perpend2 * numpy.sin(angle)
         return rotated
 
     def export_clusters(self, file_path, file_type):
         from ase.io import write
         write(file_path.format('L_ethyl'), self.L_ethyl_cluster, file_type)
-        write(file_path.format('L_ethyl_R_ethylene'), self.L_ethyl_ethylene_cluster, file_type)
+        write(file_path.format('L_ethyl_R_ethylene'), self.L_ethyl_R_ethylene_cluster, file_type)
         write(file_path.format('R_butyl'), self.R_butyl_cluster, file_type)
         write(file_path.format('R_ethyl'), self.R_ethyl_cluster, file_type)
-        write(file_path.format('R_ethyl_L_ethylene'), self.R_ethyl_ethylene_cluster, file_type)
+        write(file_path.format('R_ethyl_L_ethylene'), self.R_ethyl_L_ethylene_cluster, file_type)
         write(file_path.format('L_butyl'), self.L_butyl_cluster, file_type)
         return
 
