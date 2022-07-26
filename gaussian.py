@@ -358,12 +358,12 @@ class Gaussian():
 
 if __name__ == '__main__':
 
-    gauss = Gaussian(['ammonia.xyz'], ['ammonia_borane.xyz'], ['borazane.xyz'], 'xyz',
+    gauss = Gaussian(['tests/ammonia.xyz'], ['tests/ammonia_borane.xyz'], ['tests/borazane.xyz'], 'xyz',
             charges=[0, 0, 0, 0], mults=[1, 1, 1, 1],
             prefix='NH3BH3', nproc=4, method='PBEPBE', basis='3-21G', frozen_atoms=[2, 3, 4], scan_params='B 1 5 S 5 0.2')
     print(gauss.get_free_energies())
-    print('new algorithm', gauss.read_thermochemistry('1_b.log', new_algorithm=True))
-    print('new constants', gauss.read_thermochemistry('1_b.log', new_algorithm=False, new_constants=True))
-    print('old constants', gauss.read_thermochemistry('1_b.log', new_algorithm=False, new_constants=False))
+    print('new algorithm', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=True))
+    print('new constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=True))
+    print('old constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=False))
     print('salman script', -594.3547231345688)
 

@@ -301,11 +301,7 @@ class Silanols():
 
 if __name__ == '__main__':
 
-    clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous/Slabs/Tielens/A_117SiO2_35H2O', 'vasp')
-    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous/Slabs/Tielens/C_117SiO2_29H2O', 'vasp')
-    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous/Slabs/Tielens/D_117SiO2_22H2O', 'vasp')
-    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous/Slabs/Tielens/E_117SiO2_14H2O', 'vasp')
-    # clusters = Silanols('/mnt/c/Users/changhae/Documents/UIUC/Amorphous/Slabs/Tielens/F_117SiO2_10H2O', 'vasp')
+    clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp')
     print('--- MAIN ---')
     print('clusters.atoms')
     print(clusters.atoms)

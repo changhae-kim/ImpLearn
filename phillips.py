@@ -254,7 +254,7 @@ class Phillips():
 
 if __name__ == '__main__':
 
-    clusters = Phillips('output_silanols/A_0000.xyz', 'xyz', [2, 3])
+    clusters = Phillips('tests/A_0000.xyz', 'xyz', [2, 3])
     print('--- MAIN ---')
     clusters.export_clusters('A_0000_{:s}.xyz', 'xyz')
 
