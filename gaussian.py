@@ -295,7 +295,7 @@ class Gaussian():
             f.close()
 
             H = H_tot - (H_trans + H_rot) / Ha
-            S = (S_tot - S_trans - S_rot) / (1000 * Ha)
+            S = (S_tot - S_trans - S_rot) / Ha / 1000.0
             G = H - T * S
 
             return G
@@ -306,7 +306,7 @@ class Gaussian():
                 kB = 1.380649e-23 / 4.3597447222071e-18
                 K = 6.62607015e-34*2.99792458e+8/1.380649e-23 * 100.0
             else:
-                kB = 8.314 / 2625.499 / 1000
+                kB = 8.314 / 2625.499 / 1000.0
                 K = 1.4387772494045046
 
             T = numpy.nan
@@ -342,8 +342,8 @@ class Gaussian():
             freqs = numpy.array(freqs)
 
             T_v = freqs[freqs > 0.0] * K
-            E_v = kB * numpy.sum( T_v * ( 1/2 + 1/(numpy.exp(T_v/T) - 1) ) )
-            S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1) - numpy.log(1 - numpy.exp(-T_v/T)) )
+            E_v = kB * numpy.sum( T_v * ( 0.5 + 1.0/(numpy.exp(T_v/T) - 1.0) ) )
+            S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1.0) - numpy.log(1.0 - numpy.exp(-T_v/T)) )
 
             S_e = kB * log_Q_e
 
