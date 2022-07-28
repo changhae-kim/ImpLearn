@@ -6,10 +6,10 @@ class Gaussian():
 
     def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, file_type,
             charges=[0, 0, 0, 0], mults=[4, 4, 4, 4],
-            prefix='', nproc=1, method='wB97XD', basis='Gen',
+            prefix='', nproc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
             frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-            scan_params='B  1 19 2.1 B\nB  1 19 F\nB 19 20 2.2 B\nB 19 20 F',
+            scan_params='B  1 18 2.1 B\nB  1 18 F\nB  1 20 2.1 B\nB  1 20 F\nB 19 20 2.2 B\nB 19 20 F',
             scan_reverse=True
             ):
 
@@ -355,6 +355,7 @@ class Gaussian():
 
     def get_free_energies(self):
         return self.catalyst_free_energies, self.reactant_free_energies, self.transition_free_energies, self.product_free_energies
+
 
 if __name__ == '__main__':
 

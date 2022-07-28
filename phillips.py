@@ -3,6 +3,8 @@ import numpy
 from ase import Atoms
 from ase.neighborlist import neighbor_list
 
+from tools import rotate_vector
+
 
 class Phillips():
 
@@ -27,12 +29,12 @@ class Phillips():
 
         self.axes = self.define_axes(self.cluster, peripheral_oxygens)
         self.chromium_cluster = self.add_chromium(self.cluster, peripheral_oxygens)
-        self.L_ethyl_cluster = self.add_alkyl(self.chromium_cluster, 2, point_y=True, rotate_2=False)
-        self.L_ethyl_R_ethylene_cluster = self.add_ethylene(self.L_ethyl_cluster, point_y=False)
-        self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=False, rotate_2=True)
-        self.R_ethyl_cluster = self.add_alkyl(self.chromium_cluster, 2, point_y=False, rotate_2=False)
-        self.R_ethyl_L_ethylene_cluster = self.add_ethylene(self.R_ethyl_cluster, point_y=True)
-        self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=True, rotate_2=True)
+        self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=True, rotate_2=False)
+        self.L_butyl_R_ethylene_cluster = self.add_ethylene(self.L_butyl_cluster, point_y=False)
+        self.R_hexyl_cluster = self.add_alkyl(self.chromium_cluster, 6, point_y=False, rotate_2=True)
+        self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=False, rotate_2=False)
+        self.R_butyl_L_ethylene_cluster = self.add_ethylene(self.R_butyl_cluster, point_y=True)
+        self.L_hexyl_cluster = self.add_alkyl(self.chromium_cluster, 6, point_y=True, rotate_2=True)
 
         return
 
@@ -132,14 +134,14 @@ class Phillips():
         for i in range(0, ncarbons):
             if i == ncarbons-1:
                 H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * self.bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * self.bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + self.rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * self.bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * self.bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * self.bond_lengths[('C', 'H')])
 
         if rotate_2:
             for i in range(2, ncarbons):
-                C_coords[i] = C_coords[1] + self.rotate_vector(C_coords[i]-C_coords[1], -tilts[1], +120.0)
+                C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], +120.0)
             for i in range(2, 2*ncarbons+1):
-                H_coords[i] = C_coords[1] + self.rotate_vector(H_coords[i]-C_coords[1], -tilts[1], +120.0)
+                H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], +120.0)
 
         n = len(atoms)+1
         alkyl_atoms = []
@@ -195,10 +197,10 @@ class Phillips():
         C1_coord = Cr_coord + tilt1 * self.ethylene_bond_lengths[('Cr', 'C')]
         C2_coord = C1_coord + tilt2 * self.ethylene_bond_lengths[('C', 'C')]
         C_coords = [C1_coord, C2_coord]
-        H1_coord = C1_coord + self.rotate_vector(tilt2, tilt1, -120.0) * self.bond_lengths[('C', 'H')]
-        H2_coord = C1_coord + self.rotate_vector(tilt2, tilt1, +120.0) * self.bond_lengths[('C', 'H')]
-        H3_coord = C2_coord + self.rotate_vector(tilt2, tilt1, -60.0) * self.bond_lengths[('C', 'H')]
-        H4_coord = C2_coord + self.rotate_vector(tilt2, tilt1, +60.0) * self.bond_lengths[('C', 'H')]
+        H1_coord = C1_coord + rotate_vector(tilt2, tilt1, -120.0) * self.bond_lengths[('C', 'H')]
+        H2_coord = C1_coord + rotate_vector(tilt2, tilt1, +120.0) * self.bond_lengths[('C', 'H')]
+        H3_coord = C2_coord + rotate_vector(tilt2, tilt1, -60.0) * self.bond_lengths[('C', 'H')]
+        H4_coord = C2_coord + rotate_vector(tilt2, tilt1, +60.0) * self.bond_lengths[('C', 'H')]
         H_coords = [H1_coord, H2_coord, H3_coord, H4_coord]
 
         n = len(atoms)+1
@@ -230,25 +232,14 @@ class Phillips():
 
         return ethylene_cluster
 
-    def rotate_vector(self, vector, axis, angle, degrees=True):
-        unit = axis / numpy.linalg.norm(axis)
-        parallel = numpy.inner(vector, unit) * unit
-        perpend1 = vector - parallel
-        perpend2 = numpy.cross(unit, perpend1)
-        if degrees:
-            rotated = parallel + perpend1 * numpy.cos(numpy.pi*angle/180.0) + perpend2 * numpy.sin(numpy.pi*angle/180.0)
-        else:
-            rotated = parallel + perpend1 * numpy.cos(angle) + perpend2 * numpy.sin(angle)
-        return rotated
-
     def export_clusters(self, file_path, file_type):
         from ase.io import write
-        write(file_path.format('L_ethyl'), self.L_ethyl_cluster, file_type)
-        write(file_path.format('L_ethyl_R_ethylene'), self.L_ethyl_R_ethylene_cluster, file_type)
-        write(file_path.format('R_butyl'), self.R_butyl_cluster, file_type)
-        write(file_path.format('R_ethyl'), self.R_ethyl_cluster, file_type)
-        write(file_path.format('R_ethyl_L_ethylene'), self.R_ethyl_L_ethylene_cluster, file_type)
         write(file_path.format('L_butyl'), self.L_butyl_cluster, file_type)
+        write(file_path.format('L_butyl_R_ethylene'), self.L_butyl_R_ethylene_cluster, file_type)
+        write(file_path.format('R_hexyl'), self.R_hexyl_cluster, file_type)
+        write(file_path.format('R_butyl'), self.R_butyl_cluster, file_type)
+        write(file_path.format('R_butyl_L_ethylene'), self.R_butyl_L_ethylene_cluster, file_type)
+        write(file_path.format('L_hexyl'), self.L_hexyl_cluster, file_type)
         return
 
 
