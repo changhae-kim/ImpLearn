@@ -3,8 +3,6 @@ import numpy
 from ase import Atoms
 from ase.neighborlist import neighbor_list
 
-from tools import rotate_vector
-
 
 class Phillips():
 
@@ -241,6 +239,18 @@ class Phillips():
         write(file_path.format('R_butyl_L_ethylene'), self.R_butyl_L_ethylene_cluster, file_type)
         write(file_path.format('L_hexyl'), self.L_hexyl_cluster, file_type)
         return
+
+
+def rotate_vector(vector, axis, angle, degrees=True):
+    unit = axis / numpy.linalg.norm(axis)
+    parallel = numpy.inner(vector, unit) * unit
+    perpend1 = vector - parallel
+    perpend2 = numpy.cross(unit, perpend1)
+    if degrees:
+        rotated = parallel + perpend1 * numpy.cos(numpy.pi*angle/180.0) + perpend2 * numpy.sin(numpy.pi*angle/180.0)
+    else:
+        rotated = parallel + perpend1 * numpy.cos(angle) + perpend2 * numpy.sin(angle)
+    return rotated
 
 
 if __name__ == '__main__':

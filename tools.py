@@ -1,18 +1,7 @@
 import numpy
 
 
-def rotate_vector(vector, axis, angle, degrees=True):
-    unit = axis / numpy.linalg.norm(axis)
-    parallel = numpy.inner(vector, unit) * unit
-    perpend1 = vector - parallel
-    perpend2 = numpy.cross(unit, perpend1)
-    if degrees:
-        rotated = parallel + perpend1 * numpy.cos(numpy.pi*angle/180.0) + perpend2 * numpy.sin(numpy.pi*angle/180.0)
-    else:
-        rotated = parallel + perpend1 * numpy.cos(angle) + perpend2 * numpy.sin(angle)
-    return rotated
-
-def get_zmatrix(atoms, coords):
+def make_zmatrix(atoms, coords):
     from ase import Atoms
     X_atoms = []
     X_coords = []
@@ -86,7 +75,7 @@ if __name__ == '__main__':
         molecule = read(file_path, 0, 'xyz')
         atoms = molecule.get_chemical_symbols()
         coords = molecule.get_positions()
-        atoms, indices, coords = get_zmatrix(atoms, coords)
+        atoms, indices, coords = make_zmatrix(atoms, coords)
         print(atoms)
         print([i+1 for i in indices])
         print(coords)
@@ -94,7 +83,7 @@ if __name__ == '__main__':
         molecule = read(file_path, 0, 'xyz')
         atoms = molecule.get_chemical_symbols()
         coords = molecule.get_positions()
-        atoms, indices, coords = get_zmatrix(atoms[6:18], coords[6:18])
+        atoms, indices, coords = make_zmatrix(atoms[6:18], coords[6:18])
         print(atoms)
         print([i+1 for i in indices])
         print(coords)

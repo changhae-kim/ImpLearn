@@ -4,9 +4,10 @@ import os
 
 class Gaussian():
 
-    def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, file_type,
+    def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, prefix,
+            file_type='xyz',
             charges=[0, 0, 0, 0], mults=[4, 4, 4, 4],
-            prefix='', nproc=24, method='wB97XD', basis='Gen',
+            n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
             frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
             scan_params='B  1 18 2.1 B\nB  1 18 F\nB  1 20 2.1 B\nB  1 20 F\nB 19 20 2.2 B\nB 19 20 F',
@@ -17,7 +18,7 @@ class Gaussian():
         reactants = [self.import_cluster(file_path, file_type) for file_path in reactant_file_paths]
         products = [self.import_cluster(file_path, file_type) for file_path in product_file_paths]
 
-        self.set_parameters(nproc, method, basis, gen_basis, frozen_atoms, scan_params)
+        self.set_parameters(n_proc, method, basis, gen_basis, frozen_atoms, scan_params)
 
         self.catalyst_energies = []
         self.catalyst_clusters = []
@@ -74,9 +75,9 @@ class Gaussian():
         cluster = read(file_path, 0, file_type)
         return cluster
 
-    def set_parameters(self, nproc=None, method=None, basis=None, gen_basis=None, frozen_atoms=None, scan_params=None):
-        if nproc is not None:
-            self.nproc = nproc
+    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, frozen_atoms=None, scan_params=None):
+        if n_proc is not None:
+            self.n_proc = n_proc
         if method is not None:
             self.method = method
         if basis is not None:
@@ -94,13 +95,13 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        header = '''%NProcShared={nproc:d}
+        header = '''%NProcShared={n_proc:d}
 #n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(nproc=self.nproc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j+1 in self.frozen_atoms:
@@ -135,13 +136,13 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        header = '''%NProcShared={nproc:d}
+        header = '''%NProcShared={n_proc:d}
 #n PBEPBE/STO-3G NoSymm SCF=XQC Opt=(ModRedundant,Loose,MaxCycles=200)
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(nproc=self.nproc, label=label, charge=charge, mult=mult)
+'''.format(n_proc=self.n_proc, label=label, charge=charge, mult=mult)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
@@ -171,13 +172,13 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        header = '''%NProcShared={nproc:d}
+        header = '''%NProcShared={n_proc:d}
 #n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(nproc=self.nproc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
@@ -207,164 +208,173 @@ class Gaussian():
         else:
             return
 
-    def check_normal_termination(self, file_path):
-        f = open(file_path, 'rt')
-        for line in f:
-            continue
-        last_line = line
-        f.close()
-        if last_line.strip().startswith('Normal termination'):
-            return True
-        else:
-            return False
-
-    def read_optimized_geometries(self, file_path):
-        from ase import Atoms
-        f = open(file_path, 'rt')
-        energies = []
-        clusters = []
-        status = 0
-        for line in f:
-            if status == 0:
-                if line.strip().startswith('SCF Done:'):
-                    energy = float(line.split()[4])
-                elif line.strip().startswith('!   Optimized Parameters   !') or line.strip().startswith('! Non-Optimized Parameters !'):
-                    atoms = []
-                    coords = []
-                    status = 1
-            elif status == 1:
-                if line.strip().startswith('Input orientation:'):
-                    status = 2
-            elif status == 2:
-                if line.strip().startswith('-----'):
-                    status = 3
-            elif status == 3:
-                if line.strip().startswith('-----'):
-                    status = 4
-            elif status == 4:
-                if line.strip().startswith('-----'):
-                    energies.append(energy)
-                    clusters.append(Atoms(atoms, coords))
-                    status = 0
-                else:
-                    atoms.append(int(line.split()[1]))
-                    coords.append([float(x) for x in line.split()[-3:]])
-        f.close()
-        return energies, clusters
-
-    def read_thermochemistry(self, file_path, new_algorithm=True, new_constants=True):
-
-        if new_algorithm:
-
-            Ha = 627.5094740631
-
-            T = numpy.nan
-            H_tot = numpy.nan
-            S_tot = numpy.nan
-            H_trans = numpy.nan
-            S_trans = numpy.nan
-            H_rot = numpy.nan
-            S_rot = numpy.nan
-
-            f = open(file_path, 'rt')
-            status = 0
-            for line in f:
-                if status == 0:
-                    if line.strip().startswith('Temperature'):
-                        T = float(line.split()[1])
-                        status = 1
-                elif status == 1:
-                    if line.strip().startswith('Sum of electronic and thermal Enthalpies='):
-                        H_tot = float(line.split()[-1])
-                        status = 2
-                elif status == 2:
-                    if line.strip().startswith('E (Thermal)'):
-                        status = 3
-                elif status == 3:
-                    if line.strip().startswith('Total'):
-                        S_tot = float(line.split()[-1])
-                    elif line.strip().startswith('Translational'):
-                        H_trans = float(line.split()[1])
-                        S_trans = float(line.split()[-1])
-                    elif line.strip().startswith('Rotational'):
-                        H_rot = float(line.split()[1])
-                        S_rot = float(line.split()[-1])
-                    elif line.strip().startswith('Q'):
-                        status = 4
-                        break
-            f.close()
-
-            H = H_tot - (H_trans + H_rot) / Ha
-            S = (S_tot - S_trans - S_rot) / Ha / 1000.0
-            G = H - T * S
-
-            return G
-
-        else:
-
-            if new_constants:
-                kB = 1.380649e-23 / 4.3597447222071e-18
-                K = 6.62607015e-34*2.99792458e+8/1.380649e-23 * 100.0
-            else:
-                kB = 8.314 / 2625.499 / 1000.0
-                K = 1.4387772494045046
-
-            T = numpy.nan
-            E_e = numpy.nan
-            log_Q_e = numpy.nan
-            freqs = []
-
-            f = open(file_path, 'rt')
-            status = 0
-            for line in f:
-                if status == 0:
-                    if line.strip().startswith('SCF Done:'):
-                        E_e = float(line.split()[4])
-                    elif line.strip().startswith('Harmonic frequencies'):
-                        status = 1
-                elif status == 1:
-                    if line.strip().startswith('Frequencies'):
-                        freqs += [float(x) for x in line.split()[-3:]]
-                    elif line.strip().startswith('- Thermochemistry -'):
-                        status = 2
-                elif status == 2:
-                    if line.strip().startswith('Temperature'):
-                        T = float(line.split()[1])
-                    elif line.strip().endswith('Ln(Q)'):
-                        status = 3
-                elif status == 3:
-                    if line.strip().startswith('Electronic'):
-                        log_Q_e = float(line.split()[-1])
-                    elif line.strip().startswith('-----'):
-                        status = 4
-                        break
-            f.close()
-            freqs = numpy.array(freqs)
-
-            T_v = freqs[freqs > 0.0] * K
-            E_v = kB * numpy.sum( T_v * ( 0.5 + 1.0/(numpy.exp(T_v/T) - 1.0) ) )
-            S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1.0) - numpy.log(1.0 - numpy.exp(-T_v/T)) )
-
-            S_e = kB * log_Q_e
-
-            H = E_e + E_v + kB * T
-            S = S_e + S_v
-            G = H - T * S
-
-            return G
-
     def get_free_energies(self):
         return self.catalyst_free_energies, self.reactant_free_energies, self.transition_free_energies, self.product_free_energies
 
 
+def check_normal_termination(file_path):
+    f = open(file_path, 'rt')
+    for line in f:
+        continue
+    last_line = line
+    f.close()
+    if last_line.strip().startswith('Normal termination'):
+        return True
+    else:
+        return False
+
+def read_optimized_geometries(file_path):
+    from ase import Atoms
+    f = open(file_path, 'rt')
+    energies = []
+    clusters = []
+    status = 0
+    for line in f:
+        if status == 0:
+            if line.strip().startswith('Input orientation:'):
+                atoms = []
+                coords = []
+                status = 1
+            elif line.strip().startswith('SCF Done:'):
+                energy = float(line.split()[4])
+            elif line.strip().startswith('!   Optimized Parameters   !') or line.strip().startswith('! Non-Optimized Parameters !'):
+                energies.append(energy)
+                clusters.append(Atoms(atoms, coords))
+        elif status == 1:
+            if line.strip().startswith('-----'):
+                status = 2
+        elif status == 2:
+            if line.strip().startswith('-----'):
+                status = 3
+        elif status == 3:
+            if line.strip().startswith('-----'):
+                status = 0
+            else:
+                atoms.append(int(line.split()[1]))
+                coords.append([float(x) for x in line.split()[-3:]])
+    f.close()
+    if energies == []:
+        energies.append(energy)
+        clusters.append(Atoms(atoms, coords))
+    return energies, clusters
+
+def read_thermochemistry(file_path, new_algorithm=True, new_constants=True):
+
+    if new_algorithm:
+
+        Ha = 627.5094740631
+
+        T = numpy.nan
+        H_tot = numpy.nan
+        S_tot = numpy.nan
+        H_trans = numpy.nan
+        S_trans = numpy.nan
+        H_rot = numpy.nan
+        S_rot = numpy.nan
+
+        f = open(file_path, 'rt')
+        status = 0
+        for line in f:
+            if status == 0:
+                if line.strip().startswith('Temperature'):
+                    T = float(line.split()[1])
+                    status = 1
+            elif status == 1:
+                if line.strip().startswith('Sum of electronic and thermal Enthalpies='):
+                    H_tot = float(line.split()[-1])
+                    status = 2
+            elif status == 2:
+                if line.strip().startswith('E (Thermal)'):
+                    status = 3
+            elif status == 3:
+                if line.strip().startswith('Total'):
+                    S_tot = float(line.split()[-1])
+                elif line.strip().startswith('Translational'):
+                    H_trans = float(line.split()[1])
+                    S_trans = float(line.split()[-1])
+                elif line.strip().startswith('Rotational'):
+                    H_rot = float(line.split()[1])
+                    S_rot = float(line.split()[-1])
+                elif line.strip().startswith('Q'):
+                    status = 4
+                    break
+        f.close()
+
+        H = H_tot - (H_trans + H_rot) / Ha
+        S = (S_tot - S_trans - S_rot) / Ha / 1000.0
+        G = H - T * S
+
+        return G
+
+    else:
+
+        if new_constants:
+            kB = 1.380649e-23 / 4.3597447222071e-18
+            K = 6.62607015e-34*2.99792458e+8/1.380649e-23 * 100.0
+        else:
+            kB = 8.314 / 2625.499 / 1000.0
+            K = 1.4387772494045046
+
+        T = numpy.nan
+        E_e = numpy.nan
+        log_Q_e = numpy.nan
+        freqs = []
+
+        f = open(file_path, 'rt')
+        status = 0
+        for line in f:
+            if status == 0:
+                if line.strip().startswith('SCF Done:'):
+                    E_e = float(line.split()[4])
+                elif line.strip().startswith('Harmonic frequencies'):
+                    status = 1
+            elif status == 1:
+                if line.strip().startswith('Frequencies'):
+                    freqs += [float(x) for x in line.split()[-3:]]
+                elif line.strip().startswith('- Thermochemistry -'):
+                    status = 2
+            elif status == 2:
+                if line.strip().startswith('Temperature'):
+                    T = float(line.split()[1])
+                elif line.strip().endswith('Ln(Q)'):
+                    status = 3
+            elif status == 3:
+                if line.strip().startswith('Electronic'):
+                    log_Q_e = float(line.split()[-1])
+                elif line.strip().startswith('-----'):
+                    status = 4
+                    break
+        f.close()
+        freqs = numpy.array(freqs)
+
+        T_v = freqs[freqs > 0.0] * K
+        E_v = kB * numpy.sum( T_v * ( 0.5 + 1.0/(numpy.exp(T_v/T) - 1.0) ) )
+        S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1.0) - numpy.log(1.0 - numpy.exp(-T_v/T)) )
+
+        S_e = kB * log_Q_e
+
+        H = E_e + E_v + kB * T
+        S = S_e + S_v
+        G = H - T * S
+
+        return G
+
+
 if __name__ == '__main__':
 
-    gauss = Gaussian(['tests/ammonia.xyz'], ['tests/ammonia_borane.xyz'], ['tests/borazane.xyz'], 'xyz',
-            charges=[0, 0, 0, 0], mults=[1, 1, 1, 1],
-            prefix='NH3BH3', nproc=4, method='PBEPBE', basis='3-21G', frozen_atoms=[2, 3, 4], scan_params='B 1 5 S 5 0.2')
+    #gauss = Gaussian(['tests/ammonia.xyz'], ['tests/ammonia_borane.xyz'], ['tests/borazane.xyz'], 'NH3BH3',
+    #        charges=[0, 0, 0, 0], mults=[1, 1, 1, 1],
+    #        n_proc=4, method='PBEPBE', basis='3-21G', frozen_atoms=[2, 3, 4], scan_params='B 1 5 S 5 0.2')
+    #print(gauss.get_free_energies())
+    #print('new algorithm', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=True))
+    #print('new constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=True))
+    #print('old constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=False))
+    #print('salman script', -594.3547231345688)
+
+    gauss = Gaussian(
+            ['output_phillips/A_0000_L_butyl.xyz', 'output_phillips/A_0000_R_butyl.xyz'],
+            ['output_phillips/A_0000_L_butyl_R_ethylene.xyz', 'output_phillips/A_0000_R_butyl_L_ethylene.xyz'],
+            ['output_phillips/A_0000_R_hexyl.xyz', 'output_phillips/A_0000_L_hexyl.xyz'],
+            'A_0000')
     print(gauss.get_free_energies())
-    print('new algorithm', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=True))
-    print('new constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=True))
-    print('old constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=False))
-    print('salman script', -594.3547231345688)
 
