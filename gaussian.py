@@ -25,7 +25,7 @@ class Gaussian():
         self.catalyst_free_energies = []
         for i, cluster in enumerate(catalysts):
             optimized_energy, optimized_cluster = self.optimize_geometry('{:s}_B_{:d}'.format(prefix, i), cluster, charges[0], mults[0])
-            free_energy = self.read_thermochemistry('{:s}_B_{:d}.log'.format(prefix, i)) 
+            free_energy = read_thermochemistry('{:s}_B_{:d}.log'.format(prefix, i)) 
             self.catalyst_energies.append(optimized_energy)
             self.catalyst_clusters.append(optimized_cluster)
             self.catalyst_free_energies.append(free_energy)
@@ -34,7 +34,7 @@ class Gaussian():
         self.reactant_free_energies = []
         for i, cluster in enumerate(reactants):
             optimized_energy, optimized_cluster = self.optimize_geometry('{:s}_R_{:d}'.format(prefix, i), cluster, charges[1], mults[1])
-            free_energy = self.read_thermochemistry('{:s}_R_{:d}.log'.format(prefix, i))
+            free_energy = read_thermochemistry('{:s}_R_{:d}.log'.format(prefix, i))
             self.reactant_energies.append(optimized_energy)
             self.reactant_clusters.append(optimized_cluster)
             self.reactant_free_energies.append(free_energy)
@@ -43,7 +43,7 @@ class Gaussian():
         self.product_free_energies = []
         for i, cluster in enumerate(products):
             optimized_energy, optimized_cluster = self.optimize_geometry('{:s}_P_{:d}'.format(prefix, i), cluster, charges[3], mults[3])
-            free_energy = self.read_thermochemistry('{:s}_P_{:d}.log'.format(prefix, i))
+            free_energy = read_thermochemistry('{:s}_P_{:d}.log'.format(prefix, i))
             self.product_energies.append(optimized_energy)
             self.product_clusters.append(optimized_cluster)
             self.product_free_energies.append(free_energy)
@@ -63,7 +63,7 @@ class Gaussian():
         self.transition_free_energies = []
         for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
             transition_energy, transition_cluster = self.optimize_transition_state('{:s}_T_{:d}'.format(prefix, i), scan_clusters[numpy.argmax(scan_energies)], charges[2], mults[2])
-            free_energy = self.read_thermochemistry('{:s}_T_{:d}.log'.format(prefix, i))
+            free_energy = read_thermochemistry('{:s}_T_{:d}.log'.format(prefix, i))
             self.transition_energies.append(transition_energy)
             self.transition_clusters.append(transition_cluster)
             self.transition_free_energies.append(free_energy)
@@ -118,15 +118,15 @@ class Gaussian():
         f.close()
 
         if os.path.exists('{:s}.log'.format(label)):
-            if self.check_normal_termination('{:s}.log'.format(label)):
+            if check_normal_termination('{:s}.log'.format(label)):
                 print('already done')
             else:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
         else:
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        if self.check_normal_termination('{:s}.log'.format(label)):
-            optimized_energies, optimized_clusters = self.read_optimized_geometries('{:s}.log'.format(label))
+        if check_normal_termination('{:s}.log'.format(label)):
+            optimized_energies, optimized_clusters = read_optimized_geometries('{:s}.log'.format(label))
             return optimized_energies[-1], optimized_clusters[-1]
         else:
             return
@@ -163,7 +163,7 @@ class Gaussian():
         else:
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        scan_energies, scan_clusters = self.read_optimized_geometries('{:s}.log'.format(label))
+        scan_energies, scan_clusters = read_optimized_geometries('{:s}.log'.format(label))
 
         return scan_energies, scan_clusters
 
@@ -195,15 +195,15 @@ class Gaussian():
         f.close()
 
         if os.path.exists('{:s}.log'.format(label)):
-            if self.check_normal_termination('{:s}.log'.format(label)):
+            if check_normal_termination('{:s}.log'.format(label)):
                 print('already done')
             else:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
         else:
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        if self.check_normal_termination('{:s}.log'.format(label)):
-            transition_energies, transition_clusters = self.read_optimized_geometries('{:s}.log'.format(label))
+        if check_normal_termination('{:s}.log'.format(label)):
+            transition_energies, transition_clusters = read_optimized_geometries('{:s}.log'.format(label))
             return transition_energies[-1], transition_clusters[-1]
         else:
             return
@@ -362,19 +362,19 @@ def read_thermochemistry(file_path, new_algorithm=True, new_constants=True):
 
 if __name__ == '__main__':
 
-    #gauss = Gaussian(['tests/ammonia.xyz'], ['tests/ammonia_borane.xyz'], ['tests/borazane.xyz'], 'NH3BH3',
-    #        charges=[0, 0, 0, 0], mults=[1, 1, 1, 1],
-    #        n_proc=4, method='PBEPBE', basis='3-21G', frozen_atoms=[2, 3, 4], scan_params='B 1 5 S 5 0.2')
-    #print(gauss.get_free_energies())
-    #print('new algorithm', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=True))
-    #print('new constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=True))
-    #print('old constants', gauss.read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=False))
-    #print('salman script', -594.3547231345688)
-
-    gauss = Gaussian(
-            ['output_phillips/A_0000_L_butyl.xyz', 'output_phillips/A_0000_R_butyl.xyz'],
-            ['output_phillips/A_0000_L_butyl_R_ethylene.xyz', 'output_phillips/A_0000_R_butyl_L_ethylene.xyz'],
-            ['output_phillips/A_0000_R_hexyl.xyz', 'output_phillips/A_0000_L_hexyl.xyz'],
-            'A_0000')
+    gauss = Gaussian(['tests/ammonia.xyz'], ['tests/ammonia_borane.xyz'], ['tests/borazane.xyz'], 'NH3BH3',
+            charges=[0, 0, 0, 0], mults=[1, 1, 1, 1],
+            n_proc=4, method='PBEPBE', basis='3-21G', frozen_atoms=[2, 3, 4], scan_params='B 1 5 S 5 0.2')
     print(gauss.get_free_energies())
+    print('new algorithm', read_thermochemistry('tests/1_b.log', new_algorithm=True))
+    print('new constants', read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=True))
+    print('old constants', read_thermochemistry('tests/1_b.log', new_algorithm=False, new_constants=False))
+    print('salman script', -594.3547231345688)
+
+    #gauss = Gaussian(
+    #        ['output_phillips/A_0000_L_butyl.xyz', 'output_phillips/A_0000_R_butyl.xyz'],
+    #        ['output_phillips/A_0000_L_butyl_R_ethylene.xyz', 'output_phillips/A_0000_R_butyl_L_ethylene.xyz'],
+    #        ['output_phillips/A_0000_R_hexyl.xyz', 'output_phillips/A_0000_L_hexyl.xyz'],
+    #        'A_0000')
+    #print(gauss.get_free_energies())
 
