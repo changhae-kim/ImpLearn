@@ -9,7 +9,7 @@ class Silanols():
             OH_bond_length = 0.96
             ):
 
-        self.slab, self.bonds = self.import_slab(file_path, file_type, bond_cutoffs)
+        self.slab, self.bonds = self.load_slab(file_path, file_type, bond_cutoffs)
         self.atoms = self.slab.get_chemical_symbols()
 
         self.OH_groups = self.find_OH_groups()
@@ -19,7 +19,7 @@ class Silanols():
 
         return
 
-    def import_slab(self, file_path, file_type, bond_cutoffs):
+    def load_slab(self, file_path, file_type, bond_cutoffs):
         from ase.io import read
         from ase.neighborlist import neighbor_list
         slab = read(file_path, 0, file_type)
@@ -292,7 +292,7 @@ class Silanols():
                     pyplot.savefig(file_path.format(A, B))
         return
 
-    def export_clusters(self, file_path, file_type):
+    def save_clusters(self, file_path, file_type):
         from ase.io import write
         for i, cluster in enumerate(self.minimal_clusters):
             write(file_path.format(i), cluster, file_type)
@@ -317,5 +317,5 @@ if __name__ == '__main__':
     print(len(clusters.vicinal_OH_pairs))
     print(clusters.vicinal_OH_pairs)
     clusters.analyze_distances('A_d{:s}{:s}.png')
-    clusters.export_clusters('A_{:04d}.xyz', 'xyz')
+    clusters.save_clusters('A_{:04d}.xyz', 'xyz')
 

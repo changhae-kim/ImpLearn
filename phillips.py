@@ -7,6 +7,7 @@ from ase.neighborlist import neighbor_list
 class Phillips():
 
     def __init__(self, file_path, file_type, peripheral_oxygens,
+            alkyl_lengths=[4, 6],
             bond_cutoffs={
                 ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
                 ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2
@@ -19,7 +20,7 @@ class Phillips():
         self.bond_lengths = bond_lengths
         self.ethylene_bond_lengths = ethylene_bond_lengths
 
-        self.cluster = self.import_cluster(file_path, file_type)
+        self.cluster = self.load_cluster(file_path, file_type)
 
         for n, i in enumerate(peripheral_oxygens):
             if i < 0:
@@ -27,16 +28,16 @@ class Phillips():
 
         self.axes = self.define_axes(self.cluster, peripheral_oxygens)
         self.chromium_cluster = self.add_chromium(self.cluster, peripheral_oxygens)
-        self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=True, rotate_2=False)
+        self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[0], point_y=True, rotate_2=False)
         self.L_butyl_R_ethylene_cluster = self.add_ethylene(self.L_butyl_cluster, point_y=False)
-        self.R_hexyl_cluster = self.add_alkyl(self.chromium_cluster, 6, point_y=False, rotate_2=True)
-        self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, 4, point_y=False, rotate_2=False)
+        self.R_hexyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[1], point_y=False, rotate_2=True)
+        self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[0], point_y=False, rotate_2=False)
         self.R_butyl_L_ethylene_cluster = self.add_ethylene(self.R_butyl_cluster, point_y=True)
-        self.L_hexyl_cluster = self.add_alkyl(self.chromium_cluster, 6, point_y=True, rotate_2=True)
+        self.L_hexyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[1], point_y=True, rotate_2=True)
 
         return
 
-    def import_cluster(self, file_path, file_type):
+    def load_cluster(self, file_path, file_type):
         from ase.io import read
         cluster = read(file_path, 0, file_type)
         return cluster
@@ -230,7 +231,7 @@ class Phillips():
 
         return ethylene_cluster
 
-    def export_clusters(self, file_path, file_type):
+    def save_clusters(self, file_path, file_type):
         from ase.io import write
         write(file_path.format('L_butyl'), self.L_butyl_cluster, file_type)
         write(file_path.format('L_butyl_R_ethylene'), self.L_butyl_R_ethylene_cluster, file_type)
@@ -256,5 +257,5 @@ def rotate_vector(vector, axis, angle, degrees=True):
 if __name__ == '__main__':
 
     clusters = Phillips('tests/A_0000.xyz', 'xyz', [2, 3])
-    clusters.export_clusters('A_0000_{:s}.xyz', 'xyz')
+    clusters.save_clusters('A_0000_{:s}.xyz', 'xyz')
 
