@@ -409,9 +409,9 @@ if __name__ == '__main__':
     '''
 
     gauss = Gaussian(
-            ['output_phillips/A_0000_L_butyl.xyz', 'output_phillips/A_0000_R_butyl.xyz'],
-            ['output_phillips/A_0000_L_butyl_R_ethylene.xyz', 'output_phillips/A_0000_R_butyl_L_ethylene.xyz'],
-            ['output_phillips/A_0000_R_hexyl.xyz', 'output_phillips/A_0000_L_hexyl.xyz'],
+            ['tests/A_0000_L_butyl.xyz', 'tests/A_0000_R_butyl.xyz'],
+            ['tests/A_0000_L_butyl_R_ethylene.xyz', 'tests/A_0000_R_butyl_L_ethylene.xyz'],
+            ['tests/A_0000_R_hexyl.xyz', 'tests/A_0000_L_hexyl.xyz'],
             'A_0000')
     print(gauss.get_free_energies())
 
