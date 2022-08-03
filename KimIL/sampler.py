@@ -1,7 +1,7 @@
 import numpy
 
 
-class Sampling():
+class Sampler():
 
     def __init__(self, n_points, initial_batch=[], initial_batch_size=50, batch_size=5, replace=False, random_state=0):
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     n_points = 500
 
-    sampler = Sampling(n_points)
+    sampler = Sampler(n_points)
 
     print(sampler.samples)
 
