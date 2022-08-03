@@ -8,7 +8,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 class KimMLKR(MLKR):
 
-    def __init__(self, regularizer='L2', alpha=1.0,
+    def __init__(self, regularizer='L0', alpha=0.0,
             n_components=None, init='auto', tol=None, max_iter=1000, verbose=False, preprocessor=None, random_state=None):
         self.regularizer = regularizer
         self.alpha = alpha
@@ -31,7 +31,7 @@ class KimMLKR(MLKR):
 
 class Kernel():
 
-    def __init__(self, norm='minmax', X_norm=None, y_norm=None, regularizer='L2', alpha=1.0):
+    def __init__(self, norm='minmax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0):
         if X_norm is None:
             X_norm = norm
         if y_norm is None:
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     y = rng.randn(n_samples)
     print(X)
     print(y)
-    kernel = Kernel(norm=None, regularizer='L0', alpha=0.0)
+    kernel = Kernel(norm=None)
     kernel.fit(X, y)
     print(kernel.matrix)
     z = kernel.predict(X)
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     y = numpy.cos((X[:, 0]**2.0 + X[:, 1]**2.0)**0.5)
     print(X)
     print(y)
-    kernel = Kernel(norm=None, regularizer='L0', alpha=0.0)
+    kernel = Kernel(norm=None)
     kernel.fit(X, y)
     print(kernel.matrix)
     n_tests = 20
