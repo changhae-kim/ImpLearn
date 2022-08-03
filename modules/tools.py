@@ -1,5 +1,7 @@
 import numpy
 
+from ase import Atoms
+
 
 def rotate_vector(vector, axis, angle, degrees=True):
     unit = axis / numpy.linalg.norm(axis)
@@ -13,7 +15,6 @@ def rotate_vector(vector, axis, angle, degrees=True):
     return rotated
 
 def make_zmatrix(atoms, coords):
-    from ase import Atoms
     X_atoms = []
     X_coords = []
     H_atoms = []

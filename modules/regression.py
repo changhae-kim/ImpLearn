@@ -3,6 +3,7 @@ import numpy
 from metric_learn import MLKR
 
 from scipy.special import logsumexp
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 class KimMLKR(MLKR):
@@ -48,20 +49,16 @@ class Kernel():
 
         if self.X_norm:
             if self.X_norm in ['minmax', 'MinMax']:
-                from sklearn.preprocessing import MinMaxScaler
                 self.X_scaler = MinMaxScaler()
             elif self.X_norm in ['standard', 'Standard']:
-                from sklearn.preprocessing import StandardScaler
                 self.X_scaler = StandardScaler()
             self.X_scaler.fit(self.X_train)
             self.X_train = self.X_scaler.transform(self.X_train)
 
         if self.y_norm:
             if self.y_norm in ['minmax', 'MinMax']:
-                from sklearn.preprocessing import MinMaxScaler
                 self.y_scaler = MinMaxScaler()
             elif self.y_norm in ['standard', 'Standard']:
-                from sklearn.preprocessing import StandardScaler
                 self.tearget_scaler = StandardScaler()
             self.y_scaler.fit(self.y_train.reshape((-1, 1)))
             self.y_train = self.y_scaler.transform(self.y_train.reshape((-1, 1))).reshape((-1, ))

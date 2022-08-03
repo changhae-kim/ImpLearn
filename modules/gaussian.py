@@ -1,6 +1,9 @@
 import numpy
 import os
 
+from ase import Atoms
+from ase.io import read
+
 
 def check_normal_termination(file_path):
     last_line = ''
@@ -14,7 +17,6 @@ def check_normal_termination(file_path):
         return False
 
 def read_optimized_geometries(file_path):
-    from ase import Atoms
     f = open(file_path, 'rt')
     n_cycles = 0
     energies = []
@@ -250,7 +252,6 @@ class Gaussian():
         return
 
     def load_cluster(self, file_path, file_type):
-        from ase.io import read
         cluster = read(file_path, 0, file_type)
         return cluster
 
