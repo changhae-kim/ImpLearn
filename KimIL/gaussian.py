@@ -16,7 +16,7 @@ def check_normal_termination(file_path):
     else:
         return False
 
-def read_optimized_geometries(file_path):
+def read_geometry_optimization(file_path):
     f = open(file_path, 'rt')
     n_cycles = 0
     energies = []
@@ -311,7 +311,7 @@ class Gaussian():
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
         if check_normal_termination('{:s}.log'.format(label)):
-            optimized_energies, optimized_clusters = read_optimized_geometries('{:s}.log'.format(label))
+            optimized_energies, optimized_clusters = read_geometry_optimization('{:s}.log'.format(label))
             return optimized_energies[-1], optimized_clusters[-1]
         else:
             return
@@ -347,7 +347,7 @@ class Gaussian():
         else:
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        scan_energies, scan_clusters = read_optimized_geometries('{:s}.log'.format(label))
+        scan_energies, scan_clusters = read_geometry_optimization('{:s}.log'.format(label))
 
         return scan_energies, scan_clusters
 
@@ -388,7 +388,7 @@ class Gaussian():
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
         if check_normal_termination('{:s}.log'.format(label)):
-            transition_energies, transition_clusters = read_optimized_geometries('{:s}.log'.format(label))
+            transition_energies, transition_clusters = read_geometry_optimization('{:s}.log'.format(label))
             if check_geometry(transition_clusters[-1], self.transition_criteria):
                 return transition_energies[-1], transition_clusters[-1]
             else:
