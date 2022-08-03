@@ -101,6 +101,7 @@ if __name__ == '__main__':
     z = kernel.predict(X)
     print(z)
     '''
+
     n_samples, n_features = 200, 2
     X = 5.0 * rng.randn(n_samples, n_features)
     y = numpy.cos((X[:, 0]**2.0 + X[:, 1]**2.0)**0.5)

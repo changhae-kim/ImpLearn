@@ -401,10 +401,12 @@ class Gaussian():
 
 if __name__ == '__main__':
 
-    #print('new algorithm', read_thermochemistry('tests/1_b.log'))
-    #print('old algorithm', read_thermochemistry_salman('tests/1_b.log', new_constants=True))
-    #print('old constants', read_thermochemistry_salman('tests/1_b.log', new_constants=False))
-    #print('salman script', -594.3547231345688)
+    '''
+    print('new algorithm', read_thermochemistry('tests/1_b.log'))
+    print('old algorithm', read_thermochemistry_salman('tests/1_b.log', new_constants=True))
+    print('old constants', read_thermochemistry_salman('tests/1_b.log', new_constants=False))
+    print('salman script', -594.3547231345688)
+    '''
 
     gauss = Gaussian(
             ['output_phillips/A_0000_L_butyl.xyz', 'output_phillips/A_0000_R_butyl.xyz'],
