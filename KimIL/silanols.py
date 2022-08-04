@@ -5,26 +5,25 @@ from ase.io import read, write
 from ase.neighborlist import neighbor_list
 from matplotlib import pyplot
 
-from tools import rotate_vector
-
 
 class Silanols():
 
     def __init__(self, file_path, file_type,
             bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
-            vicinal_cutoff = 4.5,
+            viable_cutoff = 4.5,
             OH_bond_length = 0.96
             ):
 
         self.slab = self.load_slab(file_path, file_type)
 
         self.bond_cutoffs = bond_cutoffs
-        self.vicinal_cutoff = vicinal_cutoff
+        self.viable_cutoff = viable_cutoff
         self.OH_bond_length = OH_bond_length
 
         self.OH_groups = self.find_OH_groups()
         self.geminal_OH_pairs = self.find_geminal_OH_pairs()
         self.vicinal_OH_pairs = self.find_vicinal_OH_pairs()
+        self.viable_OH_pairs = self.find_viable_OH_pairs()
         self.minimal_clusters = self.carve_minimal_clusters()
 
         return
@@ -110,22 +109,89 @@ class Silanols():
 
         return geminal_OH_pairs
 
-    def find_vicinal_OH_pairs(self, slab=None, OH_groups=None, geminal_OH_pairs=None, vicinal_cutoff=None, exclude_geminals=True):
+    def find_vicinal_OH_pairs(self, slab=None, bond_cutoffs=None, OH_groups=None):
 
         if slab is None:
             slab = self.slab
+        if bond_cutoffs is None:
+            bond_cutoffs = self.bond_cutoffs
         if OH_groups is None:
             OH_groups = self.OH_groups
-        if geminal_OH_pairs is None:
-            geminal_OH_pairs = self.geminal_OH_pairs
-        if vicinal_cutoff is None:
-            vicinal_cutoff = self.vicinal_cutoff
+
+        atoms = slab.get_chemical_symbols()
+        bonds = neighbor_list('ij', slab, bond_cutoffs)
 
         vicinal_OH_pairs = []
         for n, OH1_group in enumerate(OH_groups):
             for m, OH2_group in enumerate(OH_groups):
                 if n > m:
-                    if slab.get_distance(OH1_group[1], OH2_group[1], mic=True) < vicinal_cutoff:
+                    O1_neighbors = bonds[1][bonds[0] == OH1_group[1]]
+                    O2_neighbors = bonds[1][bonds[0] == OH2_group[1]]
+                    if O1_neighbors.shape[0] != 2:
+                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} atoms'.format(OH1_group[1]+1, O1_neighbors.shape[0]))
+                    for i in O1_neighbors:
+                        if atoms[i] not in ['Si', 'H']:
+                            print('find_vicinal_OH_pairs(): O {:d} is bonded to {:s} {:d}'.format(OH1_group[1]+1, atoms[i], i+1))
+                    if 'Si' not in [atoms[i] for i in O1_neighbors]:
+                        print('find_vicinal_OH_pairs(): O {:d} is not bonded to Si'.format(OH1_group[1]+1))
+                    if O2_neighbors.shape[0] != 2:
+                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} atoms'.format(OH2_group[1]+1, O2_neighbors.shape[0]))
+                    for i in O2_neighbors:
+                        if atoms[i] not in ['Si', 'H']:
+                            print('find_vicinal_OH_pairs(): O {:d} is bonded to {:s} {:d}'.format(OH2_group[1]+1, atoms[i], i+1))
+                    if 'Si' not in [atoms[i] for i in O2_neighbors]:
+                        print('find_vicinal_OH_pairs(): O {:d} is not bonded to Si'.format(OH2_group[1]+1))
+                    geminal = False
+                    for i in numpy.intersect1d(O1_neighbors, O2_neighbors):
+                        if atoms[i] == 'Si':
+                            geminal = True
+                    if geminal:
+                        continue
+                    Si1_candidates = [i for i in O1_neighbors if atoms[i] == 'Si']
+                    Si2_candidates = [i for i in O2_neighbors if atoms[i] == 'Si']
+                    Si1_candidate_neighbors = [bonds[1][bonds[0] == i] for i in Si1_candidates]
+                    Si2_candidate_neighbors = [bonds[1][bonds[0] == i] for i in Si2_candidates]
+                    if len(Si1_candidates) != 1:
+                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} Si atoms'.format(OH1_group[1]+1, len(Si1_candidates)))
+                    for i, Si1_neighbors in zip(Si1_candidates, Si1_candidate_neighbors):
+                        if Si1_neighbors.shape[0] != 4:
+                            print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:d} atoms'.format(i+1, Si1_neighbors.shape[0]))
+                        for j in Si1_neighbors:
+                            if atoms[j] != 'O':
+                                print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
+                    if len(Si2_candidates) != 1:
+                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} Si atoms'.format(OH2_group[1]+1, len(Si2_candidates)))
+                    for i, Si2_neighbors in zip(Si2_candidates, Si2_candidate_neighbors):
+                        if Si2_neighbors.shape[0] != 4:
+                            print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:d} atoms'.format(i+1, Si2_neighbors.shape[0]))
+                        for j in Si2_neighbors:
+                            if atoms[j] != 'O':
+                                print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
+                    for i in numpy.intersect1d(numpy.concatenate(Si1_candidate_neighbors), numpy.concatenate(Si2_candidate_neighbors)):
+                        if atoms[i] == 'O':
+                            vicinal_OH_pairs.append([OH1_group, OH2_group])
+
+        return vicinal_OH_pairs
+
+    def find_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None,
+            exclude_geminals=True, geminal_OH_pairs=None, exclude_vicinals=False, vicinal_OH_pairs=None):
+
+        if slab is None:
+            slab = self.slab
+        if OH_groups is None:
+            OH_groups = self.OH_groups
+        if viable_cutoff is None:
+            viable_cutoff = self.viable_cutoff
+        if geminal_OH_pairs is None:
+            geminal_OH_pairs = self.geminal_OH_pairs
+        if vicinal_OH_pairs is None:
+            vicinal_OH_pairs = self.vicinal_OH_pairs
+
+        viable_OH_pairs = []
+        for n, OH1_group in enumerate(OH_groups):
+            for m, OH2_group in enumerate(OH_groups):
+                if n > m:
+                    if slab.get_distance(OH1_group[1], OH2_group[1], mic=True) < viable_cutoff:
                         if exclude_geminals:
                             geminal = False
                             for (OH3_group, OH4_group) in geminal_OH_pairs:
@@ -134,21 +200,26 @@ class Silanols():
                                     break
                             if geminal:
                                 continue
-                            else:
-                                vicinal_OH_pairs.append([OH1_group, OH2_group])
-                        else:
-                            vicinal_OH_pairs.append([OH1_group, OH2_group])
+                        if exclude_vicinals:
+                            vicinal = False
+                            for (OH3_group, OH4_group) in vicinal_OH_pairs:
+                                if OH1_group[1] in [OH3_group[1], OH4_group[1]] and OH2_group[1] in [OH3_group[1], OH4_group[1]]:
+                                    vicinal = True
+                                    break
+                            if vicinal:
+                                continue
+                        viable_OH_pairs.append([OH1_group, OH2_group])
 
-        return vicinal_OH_pairs
+        return viable_OH_pairs
 
-    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, vicinal_OH_pairs=None, OH_bond_length=None, reorder_podals=True):
+    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=True):
 
         if slab is None:
             slab = self.slab
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
-        if vicinal_OH_pairs is None:
-            vicinal_OH_pairs = self.vicinal_OH_pairs
+        if viable_OH_pairs is None:
+            viable_OH_pairs = self.viable_OH_pairs
         if OH_bond_length is None:
             OH_bond_length = self.OH_bond_length
 
@@ -156,7 +227,7 @@ class Silanols():
         bonds = neighbor_list('ij', slab, bond_cutoffs)
 
         minimal_clusters = []
-        for (OH1_group, OH2_group) in vicinal_OH_pairs:
+        for (OH1_group, OH2_group) in viable_OH_pairs:
 
             cluster_atoms = []
             cluster_coords = []
@@ -357,268 +428,6 @@ class Silanols():
         return
 
 
-class Phillips():
-
-    def __init__(self, file_path, file_type, peripheral_oxygens,
-            alkyl_lengths=[4, 6],
-            bond_cutoffs={
-                ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
-                ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2
-                },
-            bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
-            ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09}
-            ):
-
-        self.bond_cutoffs = bond_cutoffs
-        self.bond_lengths = bond_lengths
-        self.ethylene_bond_lengths = ethylene_bond_lengths
-
-        self.cluster = self.load_cluster(file_path, file_type)
-
-        for n, i in enumerate(peripheral_oxygens):
-            if i < 0:
-                peripheral_oxygens[n] = len(self.slab.get_chemical_symbols()) + i
-
-        self.axes = self.define_axes(self.cluster, peripheral_oxygens)
-        self.chromium_cluster = self.add_chromium(self.cluster, peripheral_oxygens)
-        self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[0], point_y=True, rotate_2=False)
-        self.L_butyl_R_ethylene_cluster = self.add_ethylene(self.L_butyl_cluster, point_y=False)
-        self.R_hexyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[1], point_y=False, rotate_2=True)
-        self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[0], point_y=False, rotate_2=False)
-        self.R_butyl_L_ethylene_cluster = self.add_ethylene(self.R_butyl_cluster, point_y=True)
-        self.L_hexyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[1], point_y=True, rotate_2=True)
-
-        return
-
-    def load_cluster(self, file_path, file_type):
-        cluster = read(file_path, 0, file_type)
-        return cluster
-
-    def define_axes(self, cluster, peripheral_oxygens, bond_cutoffs=None):
-
-        if bond_cutoffs is None:
-            bond_cutoffs = self.bond_cutoffs
-
-        atoms = cluster.get_chemical_symbols()
-        coords = cluster.get_positions()
-        bonds = neighbor_list('ij', cluster, bond_cutoffs)
-
-        chasis_silicons = []
-        for i in peripheral_oxygens:
-            i_neighbors = bonds[1][bonds[0] == i]
-            for j in i_neighbors:
-                if atoms[j] == 'Si':
-                    chasis_silicons.append(j)
-
-        n, m = peripheral_oxygens
-        p, q = chasis_silicons
-        xaxis = coords[m] - coords[n]
-        xaxis = xaxis / numpy.linalg.norm(xaxis)
-        zaxis = coords[n] + coords[m] - coords[p] - coords[q]
-        zaxis = zaxis - numpy.inner(zaxis, xaxis) * xaxis
-        zaxis = zaxis / numpy.linalg.norm(zaxis)
-        yaxis = numpy.cross(zaxis, xaxis)
-        axes = numpy.array([xaxis, yaxis, zaxis])
-
-        return axes
-
-    def add_chromium(self, cluster, peripheral_oxygens, bond_cutoffs=None, bond_lengths=None, axes=None):
-
-        if bond_cutoffs is None:
-            bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
-        if axes is None:
-            axes = self.axes
-
-        atoms = cluster.get_chemical_symbols()
-        coords = cluster.get_positions()
-        bonds = neighbor_list('ij', cluster, bond_cutoffs)
-
-        peripheral_hydrogens = []
-        for i in peripheral_oxygens:
-            i_neighbors = bonds[1][bonds[0] == i]
-            for j in i_neighbors:
-                if atoms[j] == 'H':
-                    peripheral_hydrogens.append(j)
-
-        n, m = peripheral_oxygens
-        OO_distance = cluster.get_distance(n, m)
-        if 0.5 * OO_distance < bond_lengths[('Cr', 'O')]:
-            Cr_coord = 0.5 * (coords[n] + coords[m]) + axes[2] * ((bond_lengths[('Cr', 'O')])**2.0 - (0.5 * OO_distance)**2.0)**0.5
-        else:
-            Cr_coord = 0.5 * (coords[n] + coords[m])
-
-        chromium_atoms = []
-        chromium_coords = []
-        for i, (X, coord) in enumerate(zip(atoms, coords)):
-            if i in peripheral_hydrogens:
-                if i == peripheral_hydrogens[0]:
-                    chromium_atoms.append('Cr')
-                    chromium_coords.append(Cr_coord)
-            else:
-                chromium_atoms.append(X)
-                chromium_coords.append(coord)
-
-        chromium_cluster = Atoms(chromium_atoms, chromium_coords)
-
-        return chromium_cluster
-
-    def add_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None, point_y=True, rotate_2=False):
-
-        if bond_cutoffs is None:
-            bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
-        if axes is None:
-            axes = self.axes
-
-        atoms = cluster.get_chemical_symbols()
-        coords = cluster.get_positions()
-        bonds = neighbor_list('ij', cluster, bond_cutoffs)
-
-        Cr_index = -1
-        Cr_coord = []
-        for i, (X, coord) in enumerate(zip(atoms, coords)):
-            if X == 'Cr':
-                Cr_index = i
-                Cr_coord = coord
-
-        if point_y:
-            tilts = [
-                    axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
-                    axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) + axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
-                    ]
-        else:
-            tilts = [
-                    axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
-                    axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
-                    ]
-
-        C_coords = [Cr_coord + tilts[0] * bond_lengths[('Cr', 'C')]]
-        for i in range(1, alkyl_length):
-            C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * bond_lengths[('C', 'C')])
-        H_coords = []
-        for i in range(0, alkyl_length):
-            if i == alkyl_length-1:
-                H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * bond_lengths[('C', 'H')])
-
-        if rotate_2:
-            for i in range(2, alkyl_length):
-                C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], +120.0)
-            for i in range(2, 2*alkyl_length+1):
-                H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], +120.0)
-
-        n = len(atoms)+1
-        alkyl_atoms = []
-        alkyl_coords = []
-        for i, (X, coord) in enumerate(zip(atoms, coords)):
-            if X == 'C':
-                n = i
-                break
-            else:
-                alkyl_atoms.append(X)
-                alkyl_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
-            if X == 'C':
-                alkyl_atoms.append('C')
-                alkyl_coords.append(coord)
-        for coord in C_coords:
-            alkyl_atoms.append('C')
-            alkyl_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
-            if X == 'H':
-                alkyl_atoms.append('H')
-                alkyl_coords.append(coord)
-        for coord in H_coords:
-            alkyl_atoms.append('H')
-            alkyl_coords.append(coord)
-
-        alkyl_cluster = Atoms(alkyl_atoms, alkyl_coords)
-
-        return alkyl_cluster
-
-    def add_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None, point_y=False):
-
-        if bond_cutoffs is None:
-            bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
-        if ethylene_bond_lengths is None:
-            ethylene_bond_lengths = self.ethylene_bond_lengths
-        if axes is None:
-            axes = self.axes
-
-        atoms = cluster.get_chemical_symbols()
-        coords = cluster.get_positions()
-        bonds = neighbor_list('ij', cluster, bond_cutoffs)
-
-        Cr_index = -1
-        Cr_coord = []
-        for i, (X, coord) in enumerate(zip(atoms, coords)):
-            if X == 'Cr':
-                Cr_index = i
-                Cr_coord = coord
-
-        angle = numpy.arctan(0.5 * ethylene_bond_lengths[('C', 'C')] / ethylene_bond_lengths[('Cr', 'C')])
-        if point_y:
-            tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
-            tilt1 = tilt0 * numpy.cos(angle) + axes[0] * numpy.sin(angle)
-            tilt2 = tilt0 * numpy.sin(angle) - axes[0] * numpy.cos(angle)
-        else:
-            tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
-            tilt1 = tilt0 * numpy.cos(angle) - axes[0] * numpy.sin(angle)
-            tilt2 = tilt0 * numpy.sin(angle) + axes[0] * numpy.cos(angle)
-        C1_coord = Cr_coord + tilt1 * ethylene_bond_lengths[('Cr', 'C')]
-        C2_coord = C1_coord + tilt2 * ethylene_bond_lengths[('C', 'C')]
-        C_coords = [C1_coord, C2_coord]
-        H1_coord = C1_coord + rotate_vector(tilt2, tilt1, -120.0) * bond_lengths[('C', 'H')]
-        H2_coord = C1_coord + rotate_vector(tilt2, tilt1, +120.0) * bond_lengths[('C', 'H')]
-        H3_coord = C2_coord + rotate_vector(tilt2, tilt1, -60.0) * bond_lengths[('C', 'H')]
-        H4_coord = C2_coord + rotate_vector(tilt2, tilt1, +60.0) * bond_lengths[('C', 'H')]
-        H_coords = [H1_coord, H2_coord, H3_coord, H4_coord]
-
-        n = len(atoms)+1
-        ethylene_atoms = []
-        ethylene_coords = []
-        for i, (X, coord) in enumerate(zip(atoms, coords)):
-            if X == 'C':
-                n = i
-                break
-            else:
-                ethylene_atoms.append(X)
-                ethylene_coords.append(coord)
-        for coord in C_coords:
-            ethylene_atoms.append('C')
-            ethylene_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
-            if X == 'C':
-                ethylene_atoms.append('C')
-                ethylene_coords.append(coord)
-        for coord in H_coords:
-            ethylene_atoms.append('H')
-            ethylene_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
-            if X == 'H':
-                ethylene_atoms.append('H')
-                ethylene_coords.append(coord)
-
-        ethylene_cluster = Atoms(ethylene_atoms, ethylene_coords)
-
-        return ethylene_cluster
-
-    def save_clusters(self, file_path, file_type, labels=None, clusters=None):
-        if labels is None:
-            labels = ['L_butyl', 'L_butyl_R_ethylene', 'R_hexyl', 'R_butyl', 'R_butyl_L_ethylene', 'L_hexyl']
-        if clusters is None:
-            clusters = [self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.R_hexyl_cluster, self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.L_hexyl_cluster]
-        for label, cluster in zip(labels, clusters):
-            write(file_path.format(label), cluster, file_type)
-        return
-
-
 if __name__ == '__main__':
 
 
@@ -637,11 +446,11 @@ if __name__ == '__main__':
     print('vicinal_OH_pairs')
     print(len(clusters.vicinal_OH_pairs))
     print(clusters.vicinal_OH_pairs)
+    print('viable_OH_pairs')
+    print(len(clusters.viable_OH_pairs))
+    print(clusters.viable_OH_pairs)
     clusters.analyze_distances('A_d{:s}{:s}.png')
     clusters.save_clusters('A_{:04d}.xyz', 'xyz')
 
-
-    clusters = Phillips('tests/A_0000.xyz', 'xyz', [2, 3])
-    clusters.save_clusters('A_0000_{:s}.xyz', 'xyz')
 
 
