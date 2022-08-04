@@ -621,6 +621,7 @@ class Phillips():
 
 if __name__ == '__main__':
 
+
     clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp')
     print('--- MAIN ---')
     print('atoms')
@@ -639,6 +640,8 @@ if __name__ == '__main__':
     clusters.analyze_distances('A_d{:s}{:s}.png')
     clusters.save_clusters('A_{:04d}.xyz', 'xyz')
 
+
     clusters = Phillips('tests/A_0000.xyz', 'xyz', [2, 3])
     clusters.save_clusters('A_0000_{:s}.xyz', 'xyz')
+
 
