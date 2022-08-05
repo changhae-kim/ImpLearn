@@ -9,34 +9,43 @@ from tools import rotate_vector
 
 class Phillips():
 
-    def __init__(self, file_path, file_type, peripheral_oxygens,
+    def __init__(self, file_path, file_type,
+            peripheral_oxygens=[2, 3],
             alkyl_lengths=[4, 6],
             bond_cutoffs={
                 ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
                 ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2
                 },
             bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
-            ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09}
+            ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
+            transition_lengths={('Cr', 'C'): 2.1, ('C', 'C'): 2.2, ('C', 'Cr'): 2.1}
             ):
 
         self.bond_cutoffs = bond_cutoffs
         self.bond_lengths = bond_lengths
         self.ethylene_bond_lengths = ethylene_bond_lengths
+        self.transition_lengths = transition_lengths
 
         self.cluster = self.load_cluster(file_path, file_type)
 
-        for n, i in enumerate(peripheral_oxygens):
-            if i < 0:
-                peripheral_oxygens[n] = len(self.slab.get_chemical_symbols()) + i
+        self.alkyl_lengths = alkyl_lengths
+        self.peripheral_oxygens = []
+        for i, n in enumerate(peripheral_oxygens):
+            if n < 0:
+                self.peripheral_oxygens.append(len(self.slab.get_chemical_symbols()) + n)
+            else:
+                self.peripheral_oxygens.append(n)
 
-        self.axes = self.define_axes(self.cluster, peripheral_oxygens)
-        self.chromium_cluster = self.add_chromium(self.cluster, peripheral_oxygens)
-        self.L_butyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[0], point_y=True, rotate_2=False)
-        self.L_butyl_R_ethylene_cluster = self.add_ethylene(self.L_butyl_cluster, point_y=False)
-        self.R_hexyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[1], point_y=False, rotate_2=True)
-        self.R_butyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[0], point_y=False, rotate_2=False)
-        self.R_butyl_L_ethylene_cluster = self.add_ethylene(self.R_butyl_cluster, point_y=True)
-        self.L_hexyl_cluster = self.add_alkyl(self.chromium_cluster, alkyl_lengths[1], point_y=True, rotate_2=True)
+        self.axes = self.define_axes(self.cluster)
+        self.chromium_cluster = self.attach_chromium(self.cluster)
+        self.L_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, rotate_2=False)
+        self.L_butyl_R_ethylene_cluster = self.attach_ethylene(self.L_butyl_cluster, point_y=False)
+        self.LR_transition_cluster = self.attach_transition(self.chromium_cluster, self.alkyl_lengths[1], point_y=False)
+        self.R_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=False, rotate_2=True)
+        self.R_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=False, rotate_2=False)
+        self.R_butyl_L_ethylene_cluster = self.attach_ethylene(self.R_butyl_cluster, point_y=True)
+        self.RL_transition_cluster = self.attach_transition(self.chromium_cluster, self.alkyl_lengths[1], point_y=True)
+        self.L_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=True, rotate_2=True)
 
         return
 
@@ -44,8 +53,10 @@ class Phillips():
         cluster = read(file_path, 0, file_type)
         return cluster
 
-    def define_axes(self, cluster, peripheral_oxygens, bond_cutoffs=None):
+    def define_axes(self, cluster, peripheral_oxygens=None, bond_cutoffs=None):
 
+        if peripheral_oxygens is None:
+            peripheral_oxygens = self.peripheral_oxygens
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
 
@@ -72,8 +83,10 @@ class Phillips():
 
         return axes
 
-    def add_chromium(self, cluster, peripheral_oxygens, bond_cutoffs=None, bond_lengths=None, axes=None):
+    def attach_chromium(self, cluster, peripheral_oxygens=None, bond_cutoffs=None, bond_lengths=None, axes=None):
 
+        if peripheral_oxygens is None:
+            peripheral_oxygens = self.peripheral_oxygens
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
         if bond_lengths is None:
@@ -114,7 +127,7 @@ class Phillips():
 
         return chromium_cluster
 
-    def add_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None, point_y=True, rotate_2=False):
+    def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None, point_y=True, rotate_2=False):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -157,9 +170,9 @@ class Phillips():
 
         if rotate_2:
             for i in range(2, alkyl_length):
-                C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], +120.0)
+                C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], 180.0)
             for i in range(2, 2*alkyl_length+1):
-                H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], +120.0)
+                H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], 180.0)
 
         n = len(atoms)+1
         alkyl_atoms = []
@@ -190,7 +203,7 @@ class Phillips():
 
         return alkyl_cluster
 
-    def add_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None, point_y=False):
+    def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None, point_y=False):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -212,22 +225,24 @@ class Phillips():
                 Cr_index = i
                 Cr_coord = coord
 
-        angle = numpy.arctan(0.5 * ethylene_bond_lengths[('C', 'C')] / ethylene_bond_lengths[('Cr', 'C')])
+        #angle = numpy.arctan(0.5 * ethylene_bond_lengths[('C', 'C')] / ethylene_bond_lengths[('Cr', 'C')])
         if point_y:
             tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
-            tilt1 = tilt0 * numpy.cos(angle) + axes[0] * numpy.sin(angle)
-            tilt2 = tilt0 * numpy.sin(angle) - axes[0] * numpy.cos(angle)
+            tilt1 = -axes[0]
+            #tilt1 = tilt0 * numpy.cos(angle) + axes[0] * numpy.sin(angle)
+            #tilt2 = tilt0 * numpy.sin(angle) - axes[0] * numpy.cos(angle)
         else:
             tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
-            tilt1 = tilt0 * numpy.cos(angle) - axes[0] * numpy.sin(angle)
-            tilt2 = tilt0 * numpy.sin(angle) + axes[0] * numpy.cos(angle)
-        C1_coord = Cr_coord + tilt1 * ethylene_bond_lengths[('Cr', 'C')]
-        C2_coord = C1_coord + tilt2 * ethylene_bond_lengths[('C', 'C')]
+            tilt1 = +axes[0]
+            #tilt1 = tilt0 * numpy.cos(angle) - axes[0] * numpy.sin(angle)
+            #tilt2 = tilt0 * numpy.sin(angle) + axes[0] * numpy.cos(angle)
+        C1_coord = Cr_coord + tilt0 * ethylene_bond_lengths[('Cr', 'C')]
+        C2_coord = C1_coord + tilt1 * ethylene_bond_lengths[('C', 'C')]
         C_coords = [C1_coord, C2_coord]
-        H1_coord = C1_coord + rotate_vector(tilt2, tilt1, -120.0) * bond_lengths[('C', 'H')]
-        H2_coord = C1_coord + rotate_vector(tilt2, tilt1, +120.0) * bond_lengths[('C', 'H')]
-        H3_coord = C2_coord + rotate_vector(tilt2, tilt1, -60.0) * bond_lengths[('C', 'H')]
-        H4_coord = C2_coord + rotate_vector(tilt2, tilt1, +60.0) * bond_lengths[('C', 'H')]
+        H1_coord = C1_coord + rotate_vector(tilt1, tilt0, -120.0) * bond_lengths[('C', 'H')]
+        H2_coord = C1_coord + rotate_vector(tilt1, tilt0, +120.0) * bond_lengths[('C', 'H')]
+        H3_coord = C2_coord + rotate_vector(tilt1, tilt0, -60.0) * bond_lengths[('C', 'H')]
+        H4_coord = C2_coord + rotate_vector(tilt1, tilt0, +60.0) * bond_lengths[('C', 'H')]
         H_coords = [H1_coord, H2_coord, H3_coord, H4_coord]
 
         n = len(atoms)+1
@@ -259,11 +274,121 @@ class Phillips():
 
         return ethylene_cluster
 
+    def attach_transition(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_lengths=None, axes=None, point_y=False):
+
+        if bond_cutoffs is None:
+            bond_cutoffs = self.bond_cutoffs
+        if bond_lengths is None:
+            bond_lengths = self.bond_lengths
+        if ethylene_bond_lengths is None:
+            ethylene_bond_lengths = self.ethylene_bond_lengths
+        if transition_lengths is None:
+            transition_lengths = self.transition_lengths
+        if axes is None:
+            axes = self.axes
+
+        atoms = cluster.get_chemical_symbols()
+        coords = cluster.get_positions()
+        bonds = neighbor_list('ij', cluster, bond_cutoffs)
+
+        Cr_index = -1
+        Cr_coord = []
+        for i, (X, coord) in enumerate(zip(atoms, coords)):
+            if X == 'Cr':
+                Cr_index = i
+                Cr_coord = coord
+
+        if point_y:
+            tilts = [
+                    axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
+                    axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) + axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
+                    ]
+        else:
+            tilts = [
+                    axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
+                    axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
+                    ]
+
+        C1_coord = Cr_coord + tilts[0] * transition_lengths[('Cr', 'C')]
+        C2_coord = C1_coord + tilts[1] * ethylene_bond_lengths[('C', 'C')]
+        C3_coord = C2_coord + tilts[0] * transition_lengths[('C', 'C')]
+        C_coords = [C1_coord, C2_coord, C3_coord]
+        for i in range(3, alkyl_length):
+            C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * bond_lengths[('C', 'C')])
+        H_coords = []
+        for i in range(0, alkyl_length):
+            if i == alkyl_length-1:
+                H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * bond_lengths[('C', 'H')])
+
+        for i in range(2, alkyl_length):
+            C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], 180.0)
+        for i in range(2, 2*alkyl_length+1):
+            H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], 180.0)
+
+        if point_y:
+            axis = +axes[0]
+        else:
+            axis = -axes[0]
+
+        x = numpy.array([1.0, 0.0])
+        y = numpy.array([0.0, 1.0])
+        ab = 1.34 * x
+        bc = 2.2 * (x * numpy.cos((180.0-109.5)/180.0*numpy.pi) + y * numpy.sin((180.0-109.5)/180.0*numpy.pi))
+        ac = ab + bc
+        ph3 = numpy.arccos(numpy.dot(ab, ac)/(numpy.linalg.norm(ab)*numpy.linalg.norm(ac)))
+        l1 = 2.1
+        l2 = numpy.linalg.norm(ac)
+        th1 = numpy.arccos(0.5*l2/l1)
+        th2 = 2.0 * numpy.arcsin(0.5*l2/l1)
+
+        angle = 0.5*(109.5-th2*180.0/numpy.pi)
+        for i in range(0, alkyl_length):
+            C_coords[i] = Cr_coord + rotate_vector(C_coords[i]-Cr_coord, axis, angle)
+        for i in range(0, 2*alkyl_length+1):
+            H_coords[i] = Cr_coord + rotate_vector(H_coords[i]-Cr_coord, axis, angle)
+
+        angle = 109.5-(th1+ph3)*180.0/numpy.pi
+        for i in range(1, alkyl_length):
+            C_coords[i] = C_coords[0] + rotate_vector(C_coords[i]-C_coords[0], axis, angle)
+        for i in range(1, 2*alkyl_length+1):
+            H_coords[i] = C_coords[0] + rotate_vector(H_coords[i]-C_coords[0], axis, angle)
+
+        n = len(atoms)+1
+        transition_atoms = []
+        transition_coords = []
+        for i, (X, coord) in enumerate(zip(atoms, coords)):
+            if X == 'C':
+                n = i
+                break
+            else:
+                transition_atoms.append(X)
+                transition_coords.append(coord)
+        for X, coord in zip(atoms[n:], coords[n:]):
+            if X == 'C':
+                transition_atoms.append('C')
+                transition_coords.append(coord)
+        for coord in C_coords:
+            transition_atoms.append('C')
+            transition_coords.append(coord)
+        for X, coord in zip(atoms[n:], coords[n:]):
+            if X == 'H':
+                transition_atoms.append('H')
+                transition_coords.append(coord)
+        for coord in H_coords:
+            transition_atoms.append('H')
+            transition_coords.append(coord)
+
+        transition_cluster = Atoms(transition_atoms, transition_coords)
+
+        return transition_cluster
+
     def save_clusters(self, file_path, file_type, labels=None, clusters=None):
         if labels is None:
-            labels = ['L_butyl', 'L_butyl_R_ethylene', 'R_hexyl', 'R_butyl', 'R_butyl_L_ethylene', 'L_hexyl']
+            labels = ['L_butyl', 'L_butyl_R_ethylene', 'LR_transition', 'R_hexyl', 'R_butyl', 'R_butyl_L_ethylene', 'RL_transition', 'L_hexyl']
         if clusters is None:
-            clusters = [self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.R_hexyl_cluster, self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.L_hexyl_cluster]
+            clusters = [self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_cluster, self.R_hexyl_cluster, self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_cluster, self.L_hexyl_cluster]
         for label, cluster in zip(labels, clusters):
             write(file_path.format(label), cluster, file_type)
         return
