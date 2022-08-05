@@ -113,13 +113,13 @@ class Gaussian():
                 for i, cluster in enumerate(product_clusters):
                     label = '{:s}_S_{:d}'.format(prefix, i)
                     self.scans.append(label)
-                    self.setup_scan(label, cluster, charge[3], mult[3])
+                    self.setup_scan(label, cluster, self.charges[3], self.mults[3])
 
             elif not self.scan_reverse and self.reactant_energies != [] and self.scans == []:
                 for i, cluster in enumerate(reactant_clusters):
                     label = '{:s}_S_{:d}'.format(prefix, i)
                     self.scans.append(label)
-                    self.setup_scan(label, cluster, charge[3], mult[3])
+                    self.setup_scan(label, cluster, self.charges[3], self.mults[3])
 
         else:
 
