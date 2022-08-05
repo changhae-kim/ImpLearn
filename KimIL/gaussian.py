@@ -232,21 +232,21 @@ class Gaussian():
 
         if self.catalyst_energies == []:
             for label in self.catalyst_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_geometry_optimization(label)
                 self.catalyst_energies.append(optimized_energy)
                 self.catalyst_gibbs_energies.append(gibbs_energy)
                 self.catalyst_clusters.append(optimized_cluster)
 
         if self.reactant_energies == []:
             for label in self.reactant_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_geometry_optimization(label)
                 self.reactant_energies.append(optimized_energy)
                 self.reactant_gibbs_energies.append(gibbs_energy)
                 self.reactant_clusters.append(optimized_cluster)
 
         if self.product_energies == []:
             for label in self.product_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_geometry_optimization(label)
                 self.product_energies.append(optimized_energy)
                 self.product_gibbs_energies.append(gibbs_energy)
                 self.product_clusters.append(optimized_cluster)
@@ -259,18 +259,46 @@ class Gaussian():
 
         if self.transition_energies == []:
             for label in self.transition_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_transition_optimization(label)
                 self.transition_energies.append(optimized_energy)
                 self.transition_gibbs_energies.append(gibbs_energy)
                 self.transition_clusters.append(optimized_cluster)
 
         return
 
-    def run_optimization(self, label):
+    def run_geometry_optimization(self, label):
 
         if os.path.exists('{:s}.log'.format(label)):
             if check_normal_termination('{:s}.log'.format(label)):
-                print('run_optimization(): {:s}.log already done'.format(label))
+                print('run_geometry_optimization(): {:s}.log already done'.format(label))
+            else:
+                os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
+        else:
+            os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
+
+        if check_normal_termination('{:s}.log'.format(label)):
+            energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+            gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
+            return energies[0], gibbs_energy, clusters[0]
+        else:
+            return
+
+    def run_scan(self, label):
+
+        if os.path.exists('{:s}.log'.format(label)):
+            print('run_scan(): {:s}.log already done'.format(label))
+        else:
+            os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
+
+        energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+
+        return energies, clusters
+
+    def run_transition_optimization(self, label):
+
+        if os.path.exists('{:s}.log'.format(label)):
+            if check_normal_termination('{:s}.log'.format(label)):
+                print('run_transition_optimization(): {:s}.log already done'.format(label))
             else:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
         else:
@@ -285,17 +313,6 @@ class Gaussian():
                 return
         else:
             return
-
-    def run_scan(self, label):
-
-        if os.path.exists('{:s}.log'.format(label)):
-            print('run_scan(): {:s}.log already done'.format(label))
-        else:
-            os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
-
-        energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-
-        return energies, clusters
 
     def get_gibbs_energies(self):
         return self.catalyst_gibbs_energies, self.reactant_gibbs_energies, self.product_gibbs_energies, self.transition_gibbs_energies
