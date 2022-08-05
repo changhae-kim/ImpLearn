@@ -40,6 +40,7 @@ class Kernel():
         self.y_norm = y_norm
         self.regularizer = regularizer
         self.alpha = alpha
+        self.random_state = random_state
         return
 
     def fit(self, X, y, verbose=False):
@@ -63,7 +64,7 @@ class Kernel():
             self.y_scaler.fit(self.y_train.reshape((-1, 1)))
             self.y_train = self.y_scaler.transform(self.y_train.reshape((-1, 1))).reshape((-1, ))
 
-        model = KimMLKR(regularizer=self.regularizer, alpha=self.alpha, random_state=random_state)
+        model = KimMLKR(regularizer=self.regularizer, alpha=self.alpha, random_state=self.random_state)
         model.fit(self.X_train, self.y_train)
 
         self.matrix = model.get_mahalanobis_matrix()
