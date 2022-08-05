@@ -4,175 +4,12 @@ import os
 from ase import Atoms
 from ase.io import read
 
-
-def check_normal_termination(file_path):
-    last_line = ''
-    f = open(file_path, 'rt')
-    for line in f:
-        last_line = line
-    f.close()
-    if last_line.strip().startswith('Normal termination'):
-        return True
-    else:
-        return False
-
-def read_geometry_optimization(file_path):
-    f = open(file_path, 'rt')
-    n_cycles = 0
-    energies = []
-    clusters = []
-    status = 0
-    for line in f:
-        if status == 0:
-            if line.strip().startswith('Input orientation:'):
-                atoms = []
-                coords = []
-                status = 1
-            elif line.strip().startswith('SCF Done:'):
-                n_cycles += 1
-                energy = float(line.split()[4])
-            elif line.strip().startswith('!   Optimized Parameters   !') or line.strip().startswith('! Non-Optimized Parameters !'):
-                energies.append(energy)
-                clusters.append(Atoms(atoms, coords))
-        elif status == 1:
-            if line.strip().startswith('-----'):
-                status = 2
-        elif status == 2:
-            if line.strip().startswith('-----'):
-                status = 3
-        elif status == 3:
-            if line.strip().startswith('-----'):
-                status = 0
-            else:
-                atoms.append(int(line.split()[1]))
-                coords.append([float(x) for x in line.split()[-3:]])
-    f.close()
-    if energies == [] and n_cycles > 1:
-        energies.append(energy)
-        clusters.append(Atoms(atoms, coords))
-    return energies, clusters
-
-def read_thermochemistry(file_path):
-
-    Ha = 627.5094740631
-
-    T = numpy.nan
-    H_tot = numpy.nan
-    S_tot = numpy.nan
-    H_trans = numpy.nan
-    S_trans = numpy.nan
-    H_rot = numpy.nan
-    S_rot = numpy.nan
-
-    f = open(file_path, 'rt')
-    status = 0
-    for line in f:
-        if status == 0:
-            if line.strip().startswith('Temperature'):
-                T = float(line.split()[1])
-                status = 1
-        elif status == 1:
-            if line.strip().startswith('Sum of electronic and thermal Enthalpies='):
-                H_tot = float(line.split()[-1])
-                status = 2
-        elif status == 2:
-            if line.strip().startswith('E (Thermal)'):
-                status = 3
-        elif status == 3:
-            if line.strip().startswith('Total'):
-                S_tot = float(line.split()[-1])
-            elif line.strip().startswith('Translational'):
-                H_trans = float(line.split()[1])
-                S_trans = float(line.split()[-1])
-            elif line.strip().startswith('Rotational'):
-                H_rot = float(line.split()[1])
-                S_rot = float(line.split()[-1])
-            elif line.strip().startswith('Q'):
-                status = 4
-                break
-    f.close()
-
-    H = H_tot - (H_trans + H_rot) / Ha
-    S = (S_tot - S_trans - S_rot) / Ha / 1000.0
-    G = H - T * S
-
-    return G
-
-def read_thermochemistry_salman(file_path, new_constants=False):
-
-    if new_constants:
-        kB = 1.380649e-23 / 4.3597447222071e-18
-        K = 6.62607015e-34 * 2.99792458e+8 / 1.380649e-23 * 100.0
-    else:
-        kB = 8.314 / 2625.499 / 1000.0
-        K = 1.4387772494045046
-
-    T = numpy.nan
-    E_e = numpy.nan
-    G_total = numpy.nan
-    log_Q_e = numpy.nan
-    log_Q_t = numpy.nan
-    log_Q_r = numpy.nan
-    freqs = []
-
-    f = open(file_path, 'rt')
-    status = 0
-    for line in f:
-        if status == 0:
-            if line.strip().startswith('SCF Done:'):
-                E_e = float(line.split()[4])
-            elif line.strip().startswith('Harmonic frequencies'):
-                status = 1
-        elif status == 1:
-            if line.strip().startswith('Frequencies'):
-                freqs += [float(x) for x in line.split()[-3:]]
-            elif line.strip().startswith('- Thermochemistry -'):
-                status = 2
-        elif status == 2:
-            if line.strip().startswith('Temperature'):
-                T = float(line.split()[1])
-            elif line.strip().startswith('Sum of electronic and thermal Free Energies='):
-                G_total = float(line.split()[-1])
-            elif line.strip().endswith('Ln(Q)'):
-                status = 3
-        elif status == 3:
-            if line.strip().startswith('Electronic'):
-                log_Q_e = float(line.split()[-1])
-            elif line.strip().startswith('Translational'):
-                log_Q_t = float(line.split()[-1])
-            elif line.strip().startswith('Rotational'):
-                log_Q_r = float(line.split()[-1])
-            elif line.strip().startswith('-----'):
-                status = 4
-                break
-    f.close()
-    freqs = numpy.array(freqs)
-
-    T_v = freqs[freqs > 0.0] * K
-    E_v = kB * numpy.sum( T_v * ( 0.5 + 1.0/(numpy.exp(T_v/T) - 1.0) ) )
-    S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1.0) - numpy.log(1.0 - numpy.exp(-T_v/T)) )
-
-    S_e = kB * log_Q_e
-
-    H = E_e + E_v + kB * T
-    S = S_e + S_v
-    G = G_total + kB * T * (1.0 + log_Q_t + log_Q_r)
-
-    return G
-
-def check_geometry(cluster, criteria={(0, 1): (2.0, 2.3)}):
-    status = True
-    for (i, j), (dmin, dmax) in criteria.items():
-        distance = cluster.get_distance(i, j)
-        if distance < dmin or distance > dmax:
-            status = False
-            break
-    return status
+from gaussian_tools import check_normal_termination, read_geometry_optimization, read_thermochemistry, check_geometry
 
 
 class Gaussian():
 
-    def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, prefix,
+    def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, transition_file_paths, prefix,
             file_type='xyz',
             charges=[0, 0, 0, 0], mults=[4, 4, 4, 4],
             n_proc=24, method='wB97XD', basis='Gen',
@@ -186,68 +23,35 @@ class Gaussian():
         self.catalysts = [self.load_cluster(file_path, file_type) for file_path in catalyst_file_paths]
         self.reactants = [self.load_cluster(file_path, file_type) for file_path in reactant_file_paths]
         self.products = [self.load_cluster(file_path, file_type) for file_path in product_file_paths]
+        self.transitions = [self.load_cluster(file_path, file_type) for file_path in transition_file_paths]
         self.prefix = prefix
         self.charges = charges
         self.mults = mults
 
         self.set_parameters(n_proc, method, basis, gen_basis, frozen_atoms, scan_params, scan_reverse, transition_criteria)
 
-        self.run()
-
-        return
-
-    def run(self, prefix=None):
-
-        if prefix is None:
-            prefix = self.prefix
+        self.catalyst_optimizations = []
+        self.reactant_optimizations = []
+        self.product_optimizations = []
+        self.scans = []
+        self.transition_optimizations = []
 
         self.catalyst_energies = []
-        self.catalyst_clusters = []
-        self.catalyst_free_energies = []
-        for i, cluster in enumerate(self.catalysts):
-            optimized_energy, optimized_cluster = self.optimize_geometry('{:s}_B_{:d}'.format(prefix, i), cluster, self.charges[0], self.mults[0])
-            free_energy = read_thermochemistry('{:s}_B_{:d}.log'.format(prefix, i)) 
-            self.catalyst_energies.append(optimized_energy)
-            self.catalyst_clusters.append(optimized_cluster)
-            self.catalyst_free_energies.append(free_energy)
         self.reactant_energies = []
-        self.reactant_clusters = []
-        self.reactant_free_energies = []
-        for i, cluster in enumerate(self.reactants):
-            optimized_energy, optimized_cluster = self.optimize_geometry('{:s}_R_{:d}'.format(prefix, i), cluster, self.charges[1], self.mults[1])
-            free_energy = read_thermochemistry('{:s}_R_{:d}.log'.format(prefix, i))
-            self.reactant_energies.append(optimized_energy)
-            self.reactant_clusters.append(optimized_cluster)
-            self.reactant_free_energies.append(free_energy)
         self.product_energies = []
-        self.product_clusters = []
-        self.product_free_energies = []
-        for i, cluster in enumerate(self.products):
-            optimized_energy, optimized_cluster = self.optimize_geometry('{:s}_P_{:d}'.format(prefix, i), cluster, self.charges[3], self.mults[3])
-            free_energy = read_thermochemistry('{:s}_P_{:d}.log'.format(prefix, i))
-            self.product_energies.append(optimized_energy)
-            self.product_clusters.append(optimized_cluster)
-            self.product_free_energies.append(free_energy)
-
-        if self.scan_reverse:
-            reference_clusters = self.product_clusters
-        else:
-            reference_clusters = self.reactant_clusters
         self.scan_energies = []
-        self.scan_clusters = []
-        for i, cluster in enumerate(reference_clusters):
-            scan_energies, scan_clusters = self.scan_parameters('{:s}_S_{:d}'.format(prefix, i), cluster, self.charges[2], self.mults[2])
-            self.scan_energies.append(scan_energies)
-            self.scan_clusters.append(scan_clusters)
         self.transition_energies = []
+
+        self.catalyst_gibbs_energies = []
+        self.reactant_gibbs_energies = []
+        self.product_gibbs_energies = []
+        self.transition_gibbs_energies = []
+
+        self.catalyst_clusters = []
+        self.reactant_clusters = []
+        self.product_clusters = []
+        self.scan_clusters = []
         self.transition_clusters = []
-        self.transition_free_energies = []
-        for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
-            transition_energy, transition_cluster = self.optimize_transition_state('{:s}_T_{:d}'.format(prefix, i), scan_clusters[numpy.argmax(scan_energies)], self.charges[2], self.mults[2])
-            free_energy = read_thermochemistry('{:s}_T_{:d}.log'.format(prefix, i))
-            self.transition_energies.append(transition_energy)
-            self.transition_clusters.append(transition_cluster)
-            self.transition_free_energies.append(free_energy)
 
         return
 
@@ -274,7 +78,60 @@ class Gaussian():
             self.transition_criteria = transition_criteria
         return
 
-    def optimize_geometry(self, label, cluster, charge, mult):
+    def setup(self, prefix=None):
+
+        if prefix is None:
+            prefix = self.prefix
+
+        if self.product_optimizations == []:
+            for i, cluster in enumerate(self.catalysts):
+                label = '{:s}_B_{:d}'.format(prefix, i)
+                self.catalyst_optimizations.append(label)
+                self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0])
+
+        if self.reactant_optimizations == []:
+            for i, cluster in enumerate(self.reactants):
+                label = '{:s}_R_{:d}'.format(prefix, i)
+                self.reactant_optimizations.append(label)
+                self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1])
+
+        if self.product_optimizations == []:
+            for i, cluster in enumerate(self.products):
+                label = '{:s}_P_{:d}'.format(prefix, i)
+                self.product_optimizations.append(label)
+                self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2])
+
+        if self.transitions == []:
+
+            if self.scan_energies != [] and self.transition_optimizations == []:
+                for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
+                    label = '{:s}_T_{:d}'.format(prefix, i)
+                    self.transition_optimizations.append(label)
+                    self.setup_transition_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3])
+
+            elif self.scan_reverse and self.product_energies != [] and self.scans == []:
+                for i, cluster in enumerate(product_clusters):
+                    label = '{:s}_S_{:d}'.format(prefix, i)
+                    self.scans.append(label)
+                    self.setup_scan(label, cluster, charge[3], mult[3])
+
+            elif not self.scan_reverse and self.reactant_energies != [] and self.scans == []:
+                for i, cluster in enumerate(reactant_clusters):
+                    label = '{:s}_S_{:d}'.format(prefix, i)
+                    self.scans.append(label)
+                    self.setup_scan(label, cluster, charge[3], mult[3])
+
+        else:
+
+            if self.transition_optimizations == []:
+                for i, cluster in enumerate(self.transitions):
+                    label = '{:s}_T_{:d}'.format(prefix, i)
+                    self.transition_optimizations.append(label)
+                    self.setup_transition_optimization(label, cluster, self.charges[3], self.mults[3])
+
+        return
+
+    def setup_geometry_optimization(self, label, cluster, charge, mult):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -297,26 +154,16 @@ class Gaussian():
         if self.basis in ['gen', 'Gen', 'GEN']:
             footer += self.gen_basis + '\n\n'
 
-        if not os.path.exists('{:s}.com'.format(label)):
+        if os.path.exists('{:s}.com'.format(label)):
+            print('setup_geometry_optimization(): {:s}.com already exists'.format(label))
+        else:
             f = open('{:s}.com'.format(label), 'wt')
             f.write(header + body + footer)
             f.close()
 
-        if os.path.exists('{:s}.log'.format(label)):
-            if check_normal_termination('{:s}.log'.format(label)):
-                print('already done')
-            else:
-                os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
-        else:
-            os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
+        return
 
-        if check_normal_termination('{:s}.log'.format(label)):
-            optimized_energies, optimized_clusters = read_geometry_optimization('{:s}.log'.format(label))
-            return optimized_energies[-1], optimized_clusters[-1]
-        else:
-            return
-
-    def scan_parameters(self, label, cluster, charge, mult):
+    def setup_scan(self, label, cluster, charge, mult):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -337,21 +184,16 @@ class Gaussian():
             body += '{X:s} {frozen:d} {x:f} {y:f} {z:f}\n'.format(X=X, frozen=frozen, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n{:s}\n\n'.format(self.scan_params)
 
-        if not os.path.exists('{:s}.com'.format(label)):
+        if os.path.exists('{:s}.com'.format(label)):
+            print('setup_scan(): {:s}.com already exists'.format(label))
+        else:
             f = open('{:s}.com'.format(label), 'wt')
             f.write(header + body + footer)
             f.close()
 
-        if os.path.exists('{:s}.log'.format(label)):
-            print('already done')
-        else:
-            os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
+        return
 
-        scan_energies, scan_clusters = read_geometry_optimization('{:s}.log'.format(label))
-
-        return scan_energies, scan_clusters
-
-    def optimize_transition_state(self, label, cluster, charge, mult):
+    def setup_transition_optimization(self, label, cluster, charge, mult):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -374,45 +216,101 @@ class Gaussian():
         if self.basis in ['gen', 'Gen', 'GEN']:
             footer += self.gen_basis + '\n\n'
 
-        if not os.path.exists('{:s}.com'.format(label)):
+        if os.path.exists('{:s}.com'.format(label)):
+            print('setup_transition_optimization(): {:s}.com already exists'.format(label))
+        else:
             f = open('{:s}.com'.format(label), 'wt')
             f.write(header + body + footer)
             f.close()
 
+        return
+
+    def run(self, prefix=None):
+
+        if prefix is None:
+            prefix = self.prefix
+
+        if self.catalyst_energies == []:
+            for label in self.catalyst_optimizations:
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                self.catalyst_energies.append(optimized_energy)
+                self.catalyst_gibbs_energies.append(gibbs_energy)
+                self.catalyst_clusters.append(optimized_cluster)
+
+        if self.reactant_energies == []:
+            for label in self.reactant_optimizations:
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                self.reactant_energies.append(optimized_energy)
+                self.reactant_gibbs_energies.append(gibbs_energy)
+                self.reactant_clusters.append(optimized_cluster)
+
+        if self.product_energies == []:
+            for label in self.product_optimizations:
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                self.product_energies.append(optimized_energy)
+                self.product_gibbs_energies.append(gibbs_energy)
+                self.product_clusters.append(optimized_cluster)
+
+        if self.scan_energies == []:
+            for label in self.scans:
+                scan_energies, scan_clusters = self.run_scan(label)
+                self.scan_energies.append(scan_energies)
+                self.scan_clusters.append(scan_clusters)
+
+        if self.transition_energies == []:
+            for label in self.transition_optimizations:
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_optimization(label)
+                self.transition_energies.append(optimized_energy)
+                self.transition_gibbs_energies.append(gibbs_energy)
+                self.transition_clusters.append(optimized_cluster)
+
+        return
+
+    def run_optimization(self, label):
+
         if os.path.exists('{:s}.log'.format(label)):
             if check_normal_termination('{:s}.log'.format(label)):
-                print('already done')
+                print('run_optimization(): {:s}.log already done'.format(label))
             else:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
         else:
             os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
         if check_normal_termination('{:s}.log'.format(label)):
-            transition_energies, transition_clusters = read_geometry_optimization('{:s}.log'.format(label))
-            if check_geometry(transition_clusters[-1], self.transition_criteria):
-                return transition_energies[-1], transition_clusters[-1]
+            energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+            gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
+            if check_geometry(clusters[-1], self.transition_criteria):
+                return energies[0], gibbs_energy, clusters[0]
             else:
                 return
         else:
             return
 
-    def get_free_energies(self):
-        return self.catalyst_free_energies, self.reactant_free_energies, self.transition_free_energies, self.product_free_energies
+    def run_scan(self, label):
+
+        if os.path.exists('{:s}.log'.format(label)):
+            print('run_scan(): {:s}.log already done'.format(label))
+        else:
+            os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
+
+        energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+
+        return energies, clusters
+
+    def get_gibbs_energies(self):
+        return self.catalyst_gibbs_energies, self.reactant_gibbs_energies, self.product_gibbs_energies, self.transition_gibbs_energies
 
 
 if __name__ == '__main__':
 
-    '''
-    print('new algorithm', read_thermochemistry('tests/1_b.log'))
-    print('old algorithm', read_thermochemistry_salman('tests/1_b.log', new_constants=True))
-    print('old constants', read_thermochemistry_salman('tests/1_b.log', new_constants=False))
-    print('salman script', -594.3547231345688)
-    '''
 
     gauss = Gaussian(
             ['tests/A_0000_L_butyl.xyz', 'tests/A_0000_R_butyl.xyz'],
             ['tests/A_0000_L_butyl_R_ethylene.xyz', 'tests/A_0000_R_butyl_L_ethylene.xyz'],
             ['tests/A_0000_R_hexyl.xyz', 'tests/A_0000_L_hexyl.xyz'],
+            ['tests/A_0000_LR_transition.xyz', 'tests/A_0000_RL_transition.xyz'],
             'A_0000')
-    print(gauss.get_free_energies())
+    gauss.setup()
+    gauss.run()
+
 
