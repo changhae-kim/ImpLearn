@@ -9,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 class KimMLKR(MLKR):
 
     def __init__(self, regularizer='L0', alpha=0.0,
-            n_components=None, init='auto', tol=None, max_iter=1000, verbose=False, preprocessor=None, random_state=None):
+            n_components=None, init='random', tol=None, max_iter=1000, verbose=False, preprocessor=None, random_state=None):
         self.regularizer = regularizer
         self.alpha = alpha
         super().__init__(n_components, init, tol, max_iter, verbose, preprocessor, random_state)
