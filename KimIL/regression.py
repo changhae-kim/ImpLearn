@@ -31,7 +31,7 @@ class KimMLKR(MLKR):
 
 class Kernel():
 
-    def __init__(self, norm='minmax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0):
+    def __init__(self, norm='minmax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0, random_state=None):
         if X_norm is None:
             X_norm = norm
         if y_norm is None:
@@ -63,7 +63,7 @@ class Kernel():
             self.y_scaler.fit(self.y_train.reshape((-1, 1)))
             self.y_train = self.y_scaler.transform(self.y_train.reshape((-1, 1))).reshape((-1, ))
 
-        model = KimMLKR(regularizer=self.regularizer, alpha=self.alpha)
+        model = KimMLKR(regularizer=self.regularizer, alpha=self.alpha, random_state=random_state)
         model.fit(self.X_train, self.y_train)
 
         self.matrix = model.get_mahalanobis_matrix()
