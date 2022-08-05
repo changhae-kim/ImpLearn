@@ -417,7 +417,7 @@ class Silanols():
                     pyplot.ylabel('Frequency')
                     pyplot.tight_layout()
                     pyplot.savefig(file_path.format(A, B))
-                    pyplog.close()
+                    pyplot.close()
 
         return
 
