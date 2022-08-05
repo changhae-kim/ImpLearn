@@ -312,5 +312,6 @@ if __name__ == '__main__':
             'A_0000')
     gauss.setup()
     gauss.run()
-
+    gibbs_energies = gauss.get_gibbs_energies()
+    print(gibbs_energies)
 
