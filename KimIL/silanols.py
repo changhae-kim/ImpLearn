@@ -389,7 +389,7 @@ class Silanols():
                 n = numpy.argmin([numpy.linalg.norm(centered[i]-centered[0]) for i in reordered1])
                 reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
         elif len(reordered2) > 2:
-            m = numpy.argmin([numpy.linalg.norm(centered[reordered1[-1]]-centered[j]) for j in reordered2])
+            m = numpy.argmin([numpy.linalg.norm(centered[0]-centered[j]) for j in reordered2])
             reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
         reordered = reordered1 + reordered2
 
