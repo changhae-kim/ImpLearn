@@ -9,12 +9,13 @@ from matplotlib import pyplot
 class Silanols():
 
     def __init__(self, file_path, file_type,
-            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
+            pbc = None,
+            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.0, ('O', 'H'): 1.2},
             viable_cutoff = 4.5,
             OH_bond_length = 0.96
             ):
 
-        self.slab = self.load_slab(file_path, file_type)
+        self.slab = self.load_slab(file_path, file_type, pbc)
 
         self.bond_cutoffs = bond_cutoffs
         self.viable_cutoff = viable_cutoff
@@ -28,8 +29,11 @@ class Silanols():
 
         return
 
-    def load_slab(self, file_path, file_type):
+    def load_slab(self, file_path, file_type, pbc=None):
         slab = read(file_path, 0, file_type)
+        if pbc is not None:
+            slab.set_pbc(True)
+            slab.set_cell(pbc)
         return slab
 
     def find_OH_groups(self, slab=None, bond_cutoffs=None, exclude_waters=True):
