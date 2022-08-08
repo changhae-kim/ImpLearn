@@ -18,13 +18,13 @@ class Phillips():
                 },
             bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
             ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
-            transition_lengths={('Cr', 'C'): 2.1, ('C', 'C'): 2.2, ('C', 'Cr'): 2.1}
+            transition_state_lengths={('Cr', 'C'): 2.1, ('C', 'C'): 2.2, ('C', 'Cr'): 2.1}
             ):
 
         self.bond_cutoffs = bond_cutoffs
         self.bond_lengths = bond_lengths
         self.ethylene_bond_lengths = ethylene_bond_lengths
-        self.transition_lengths = transition_lengths
+        self.transition_state_lengths = transition_state_lengths
 
         self.cluster = self.load_cluster(file_path, file_type)
 
@@ -40,11 +40,11 @@ class Phillips():
         self.chromium_cluster = self.attach_chromium(self.cluster)
         self.L_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, rotate_2=False)
         self.L_butyl_R_ethylene_cluster = self.attach_ethylene(self.L_butyl_cluster, point_y=False)
-        self.LR_transition_cluster = self.attach_transition(self.chromium_cluster, self.alkyl_lengths[1], point_y=False)
+        self.LR_transition_state_cluster = self.attach_transition_state(self.chromium_cluster, self.alkyl_lengths[1], point_y=False)
         self.R_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=False, rotate_2=True)
         self.R_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=False, rotate_2=False)
         self.R_butyl_L_ethylene_cluster = self.attach_ethylene(self.R_butyl_cluster, point_y=True)
-        self.RL_transition_cluster = self.attach_transition(self.chromium_cluster, self.alkyl_lengths[1], point_y=True)
+        self.RL_transition_state_cluster = self.attach_transition_state(self.chromium_cluster, self.alkyl_lengths[1], point_y=True)
         self.L_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=True, rotate_2=True)
 
         return
@@ -274,7 +274,7 @@ class Phillips():
 
         return ethylene_cluster
 
-    def attach_transition(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_lengths=None, axes=None, point_y=False):
+    def attach_transition_state(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None, axes=None, point_y=False):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -282,8 +282,8 @@ class Phillips():
             bond_lengths = self.bond_lengths
         if ethylene_bond_lengths is None:
             ethylene_bond_lengths = self.ethylene_bond_lengths
-        if transition_lengths is None:
-            transition_lengths = self.transition_lengths
+        if transition_state_lengths is None:
+            transition_state_lengths = self.transition_state_lengths
         if axes is None:
             axes = self.axes
 
@@ -309,9 +309,9 @@ class Phillips():
                     axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
                     ]
 
-        C1_coord = Cr_coord + tilts[0] * transition_lengths[('Cr', 'C')]
+        C1_coord = Cr_coord + tilts[0] * transition_state_lengths[('Cr', 'C')]
         C2_coord = C1_coord + tilts[1] * ethylene_bond_lengths[('C', 'C')]
-        C3_coord = C2_coord + tilts[0] * transition_lengths[('C', 'C')]
+        C3_coord = C2_coord + tilts[0] * transition_state_lengths[('C', 'C')]
         C_coords = [C1_coord, C2_coord, C3_coord]
         for i in range(3, alkyl_length):
             C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * bond_lengths[('C', 'C')])
@@ -356,39 +356,39 @@ class Phillips():
             H_coords[i] = C_coords[0] + rotate_vector(H_coords[i]-C_coords[0], axis, angle)
 
         n = len(atoms)+1
-        transition_atoms = []
-        transition_coords = []
+        transition_state_atoms = []
+        transition_state_coords = []
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'C':
                 n = i
                 break
             else:
-                transition_atoms.append(X)
-                transition_coords.append(coord)
+                transition_state_atoms.append(X)
+                transition_state_coords.append(coord)
         for X, coord in zip(atoms[n:], coords[n:]):
             if X == 'C':
-                transition_atoms.append('C')
-                transition_coords.append(coord)
+                transition_state_atoms.append('C')
+                transition_state_coords.append(coord)
         for coord in C_coords:
-            transition_atoms.append('C')
-            transition_coords.append(coord)
+            transition_state_atoms.append('C')
+            transition_state_coords.append(coord)
         for X, coord in zip(atoms[n:], coords[n:]):
             if X == 'H':
-                transition_atoms.append('H')
-                transition_coords.append(coord)
+                transition_state_atoms.append('H')
+                transition_state_coords.append(coord)
         for coord in H_coords:
-            transition_atoms.append('H')
-            transition_coords.append(coord)
+            transition_state_atoms.append('H')
+            transition_state_coords.append(coord)
 
-        transition_cluster = Atoms(transition_atoms, transition_coords)
+        transition_state_cluster = Atoms(transition_state_atoms, transition_state_coords)
 
-        return transition_cluster
+        return transition_state_cluster
 
     def save_clusters(self, file_path, file_type, labels=None, clusters=None):
         if labels is None:
-            labels = ['L_butyl', 'L_butyl_R_ethylene', 'LR_transition', 'R_hexyl', 'R_butyl', 'R_butyl_L_ethylene', 'RL_transition', 'L_hexyl']
+            labels = ['L_butyl', 'L_butyl_R_ethylene', 'LR_transition_state', 'R_hexyl', 'R_butyl', 'R_butyl_L_ethylene', 'RL_transition_state', 'L_hexyl']
         if clusters is None:
-            clusters = [self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_cluster, self.R_hexyl_cluster, self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_cluster, self.L_hexyl_cluster]
+            clusters = [self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_state_cluster, self.R_hexyl_cluster, self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_state_cluster, self.L_hexyl_cluster]
         for label, cluster in zip(labels, clusters):
             write(file_path.format(label), cluster, file_type)
         return

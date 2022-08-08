@@ -9,7 +9,7 @@ from .gaussian_tools import check_normal_termination, read_geometry_optimization
 
 class Gaussian():
 
-    def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, transition_file_paths, prefix,
+    def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, transition_state_file_paths, prefix,
             file_type='xyz',
             charges=[0, 0, 0, 0], mults=[4, 4, 4, 4],
             n_proc=24, method='wB97XD', basis='Gen',
@@ -17,41 +17,41 @@ class Gaussian():
             frozen_atoms=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
             scan_params='B 19 20 S 10 0.1',
             scan_reverse=True,
-            transition_criteria={(0, 17): (1.9, 2.4), (0, 19): (1.9, 2.4), (18, 19): (1.9, 2.4)}
+            transition_state_criteria={(0, 17): (1.9, 2.4), (0, 19): (1.9, 2.4), (18, 19): (1.9, 2.4)}
             ):
 
         self.catalysts = [self.load_cluster(file_path, file_type) for file_path in catalyst_file_paths]
         self.reactants = [self.load_cluster(file_path, file_type) for file_path in reactant_file_paths]
         self.products = [self.load_cluster(file_path, file_type) for file_path in product_file_paths]
-        self.transitions = [self.load_cluster(file_path, file_type) for file_path in transition_file_paths]
+        self.transition_states = [self.load_cluster(file_path, file_type) for file_path in transition_state_file_paths]
         self.prefix = prefix
         self.charges = charges
         self.mults = mults
 
-        self.set_parameters(n_proc, method, basis, gen_basis, frozen_atoms, scan_params, scan_reverse, transition_criteria)
+        self.set_parameters(n_proc, method, basis, gen_basis, frozen_atoms, scan_params, scan_reverse, transition_state_criteria)
 
         self.catalyst_optimizations = []
         self.reactant_optimizations = []
         self.product_optimizations = []
         self.scans = []
-        self.transition_optimizations = []
+        self.transition_state_optimizations = []
 
         self.catalyst_energies = []
         self.reactant_energies = []
         self.product_energies = []
         self.scan_energies = []
-        self.transition_energies = []
+        self.transition_state_energies = []
 
         self.catalyst_gibbs_energies = []
         self.reactant_gibbs_energies = []
         self.product_gibbs_energies = []
-        self.transition_gibbs_energies = []
+        self.transition_state_gibbs_energies = []
 
         self.catalyst_clusters = []
         self.reactant_clusters = []
         self.product_clusters = []
         self.scan_clusters = []
-        self.transition_clusters = []
+        self.transition_state_clusters = []
 
         return
 
@@ -59,7 +59,7 @@ class Gaussian():
         cluster = read(file_path, 0, file_type)
         return cluster
 
-    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_criteria=None):
+    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_state_criteria=None):
         if n_proc is not None:
             self.n_proc = n_proc
         if method is not None:
@@ -74,8 +74,8 @@ class Gaussian():
             self.scan_params = scan_params
         if scan_reverse is not None:
             self.scan_reverse = scan_reverse
-        if transition_criteria is not None:
-            self.transition_criteria = transition_criteria
+        if transition_state_criteria is not None:
+            self.transition_state_criteria = transition_state_criteria
         return
 
     def setup(self, prefix=None):
@@ -101,13 +101,13 @@ class Gaussian():
                 self.product_optimizations.append(label)
                 self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2])
 
-        if self.transitions == []:
+        if self.transition_states == []:
 
-            if self.scan_energies != [] and self.transition_optimizations == []:
+            if self.scan_energies != [] and self.transition_state_optimizations == []:
                 for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
                     label = '{:s}_T_{:d}'.format(prefix, i)
-                    self.transition_optimizations.append(label)
-                    self.setup_transition_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3])
+                    self.transition_state_optimizations.append(label)
+                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3])
 
             elif self.scan_reverse and self.product_energies != [] and self.scans == []:
                 for i, cluster in enumerate(product_clusters):
@@ -123,11 +123,11 @@ class Gaussian():
 
         else:
 
-            if self.transition_optimizations == []:
-                for i, cluster in enumerate(self.transitions):
+            if self.transition_state_optimizations == []:
+                for i, cluster in enumerate(self.transition_states):
                     label = '{:s}_T_{:d}'.format(prefix, i)
-                    self.transition_optimizations.append(label)
-                    self.setup_transition_optimization(label, cluster, self.charges[3], self.mults[3])
+                    self.transition_state_optimizations.append(label)
+                    self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3])
 
         return
 
@@ -189,7 +189,7 @@ class Gaussian():
 
         return
 
-    def setup_transition_optimization(self, label, cluster, charge, mult):
+    def setup_transition_state_optimization(self, label, cluster, charge, mult):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -251,12 +251,12 @@ class Gaussian():
                 self.scan_energies.append(scan_energies)
                 self.scan_clusters.append(scan_clusters)
 
-        if self.transition_energies == []:
-            for label in self.transition_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_transition_optimization(label, dry_run)
-                self.transition_energies.append(optimized_energy)
-                self.transition_gibbs_energies.append(gibbs_energy)
-                self.transition_clusters.append(optimized_cluster)
+        if self.transition_state_energies == []:
+            for label in self.transition_state_optimizations:
+                optimized_energy, gibbs_energy, optimized_cluster = self.run_transition_state_optimization(label, dry_run)
+                self.transition_state_energies.append(optimized_energy)
+                self.transition_state_gibbs_energies.append(gibbs_energy)
+                self.transition_state_clusters.append(optimized_cluster)
 
         return
 
@@ -285,7 +285,7 @@ class Gaussian():
 
         return
 
-    def run_transition_optimization(self, label, dry_run=False):
+    def run_transition_state_optimization(self, label, dry_run=False):
 
         if not os.path.exists('{:s}.log'.format(label)) or not check_normal_termination('{:s}.log'.format(label)):
             if not dry_run:
@@ -294,13 +294,13 @@ class Gaussian():
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
             gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
-            if check_geometry(clusters[-1], self.transition_criteria):
+            if check_geometry(clusters[-1], self.transition_state_criteria):
                 return energies[0], gibbs_energy, clusters[0]
 
         return
 
     def get_gibbs_energies(self):
-        return self.catalyst_gibbs_energies, self.reactant_gibbs_energies, self.product_gibbs_energies, self.transition_gibbs_energies
+        return self.catalyst_gibbs_energies, self.reactant_gibbs_energies, self.product_gibbs_energies, self.transition_state_gibbs_energies
 
 
 if __name__ == '__main__':
@@ -310,7 +310,7 @@ if __name__ == '__main__':
             ['tests/A_0000_L_butyl.xyz', 'tests/A_0000_R_butyl.xyz'],
             ['tests/A_0000_L_butyl_R_ethylene.xyz', 'tests/A_0000_R_butyl_L_ethylene.xyz'],
             ['tests/A_0000_R_hexyl.xyz', 'tests/A_0000_L_hexyl.xyz'],
-            ['tests/A_0000_LR_transition.xyz', 'tests/A_0000_RL_transition.xyz'],
+            ['tests/A_0000_LR_transition_state.xyz', 'tests/A_0000_RL_transition_state.xyz'],
             'A_0000')
     gauss.setup()
     gauss.run()

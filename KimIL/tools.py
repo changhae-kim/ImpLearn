@@ -3,7 +3,7 @@ import numpy
 from ase import Atoms
 
 
-def calc_k(G_r, G_ts, T):
+def calculate_k(G_r, G_ts, T):
     kB = 1.380649e-23 / 4.3597447222071e-18
     h = 6.62607015e-34 / 4.3597447222071e-18
     G_r = numpy.array(G_r)
@@ -11,7 +11,7 @@ def calc_k(G_r, G_ts, T):
     k = (kB * T / h) * numpy.exp(-(G_ts - G_r) / (kB * T))
     return k
 
-def calc_K(G_a, G_b, G_r, T):
+def calculate_K(G_a, G_b, G_r, T):
     kB = 1.380649e-23 / 4.3597447222071e-18
     G_a = numpy.array(G_a)
     G_b = numpy.array(G_b)
@@ -19,7 +19,7 @@ def calc_K(G_a, G_b, G_r, T):
     K = numpy.exp(-(G_r - G_a - G_b) / (kB * T))
     return K
 
-def calc_rates(T, C_a, k=None, K=None, G_a=None, G_b=None, G_r=None, G_ts=None):
+def calculate_rate(T, C_a, k=None, K=None, G_a=None, G_b=None, G_r=None, G_ts=None):
     kB = 1.380649e-23 / 4.3597447222071e-18
     h = 6.62607015e-34 / 4.3597447222071e-18
     T = numpy.array(T)
@@ -27,11 +27,11 @@ def calc_rates(T, C_a, k=None, K=None, G_a=None, G_b=None, G_r=None, G_ts=None):
     if k is not None:
         logk = numpy.log(k)
     else:
-        logk = numpy.log(calc_k(G_r, G_ts, T))
+        logk = numpy.log(calculate_k(G_r, G_ts, T))
     if K is not None:
         logKc = numpy.log(K * C_a)
     else:
-        logKc = numpy.log(calc_K(G_a, G_b, G_r, T) * C_a)
+        logKc = numpy.log(calculate_K(G_a, G_b, G_r, T) * C_a)
     rates = numpy.exp( logk + logKc - numpy.log(1.0 + numpy.exp(logKc)) )
     return rates
 
