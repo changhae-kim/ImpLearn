@@ -4,7 +4,7 @@ from ase import Atoms
 from ase.io import read, write
 from ase.neighborlist import neighbor_list
 
-from tools import rotate_vector
+from .tools import rotate_vector
 
 
 class Phillips():
