@@ -9,10 +9,10 @@ from matplotlib import pyplot
 class Silanols():
 
     def __init__(self, file_path, file_type,
-            pbc = None,
-            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
-            viable_cutoff = 4.5,
-            OH_bond_length = 0.96
+            pbc=None,
+            bond_cutoffs={('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
+            viable_cutoff=4.5,
+            OH_bond_length=0.96
             ):
 
         self.slab = self.load_slab(file_path, file_type, pbc)

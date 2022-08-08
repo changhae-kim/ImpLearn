@@ -12,6 +12,7 @@ class Gaussian():
     def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, transition_state_file_paths, prefix,
             file_type='xyz',
             charges=[0, 0, 0, 0], mults=[4, 4, 4, 4],
+            temp=373.15, pressure=1.0,
             n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
             frozen_atoms=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
@@ -27,6 +28,8 @@ class Gaussian():
         self.prefix = prefix
         self.charges = charges
         self.mults = mults
+        self.temp = temp
+        self.pressure = pressure
 
         self.set_parameters(n_proc, method, basis, gen_basis, frozen_atoms, scan_params, scan_reverse, transition_state_criteria)
 
@@ -87,19 +90,19 @@ class Gaussian():
             for i, cluster in enumerate(self.catalysts):
                 label = '{:s}_B_{:d}'.format(prefix, i)
                 self.catalyst_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0])
+                self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0], self.temp, self.pressure)
 
         if self.reactant_optimizations == []:
             for i, cluster in enumerate(self.reactants):
                 label = '{:s}_R_{:d}'.format(prefix, i)
                 self.reactant_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1])
+                self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1], self.temp, self.pressure)
 
         if self.product_optimizations == []:
             for i, cluster in enumerate(self.products):
                 label = '{:s}_P_{:d}'.format(prefix, i)
                 self.product_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2])
+                self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2], self.temp, self.pressure)
 
         if self.transition_states == []:
 
@@ -107,7 +110,7 @@ class Gaussian():
                 for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
                     label = '{:s}_T_{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3])
+                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3], self.temp, self.pressure)
 
             elif self.scan_reverse and self.product_energies != [] and self.scans == []:
                 for i, cluster in enumerate(product_clusters):
@@ -127,22 +130,22 @@ class Gaussian():
                 for i, cluster in enumerate(self.transition_states):
                     label = '{:s}_T_{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3])
+                    self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3], self.temp, self.pressure)
 
         return
 
-    def setup_geometry_optimization(self, label, cluster, charge, mult):
+    def setup_geometry_optimization(self, label, cluster, charge, mult, temp, pressure):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
         header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq
+#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq Temp={temp:g} Pressure={pressure:g}
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=temp, pressure=pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
@@ -189,18 +192,18 @@ class Gaussian():
 
         return
 
-    def setup_transition_state_optimization(self, label, cluster, charge, mult):
+    def setup_transition_state_optimization(self, label, cluster, charge, mult, temp, pressure):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
         header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq
+#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:g} Pressure={pressure:g}
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=temp, pressure=pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
