@@ -166,7 +166,7 @@ class Silanols():
                         if exclude_geminals:
                             geminal = False
                             for (OH3_group, OH4_group) in geminal_OH_pairs:
-                                if OH1_group[1] in [OH3_group[1], OH4_group[1]] and OH2_group[1] in [OH3_group[1], OH4_group[1]]:
+                                if OH1_group[1] in [OH3_group[1], OH4_group[1]] or OH2_group[1] in [OH3_group[1], OH4_group[1]]:
                                     geminal = True
                                     break
                             if geminal:
@@ -196,6 +196,10 @@ class Silanols():
 
         atoms = slab.get_chemical_symbols()
         bonds = neighbor_list('ij', slab, bond_cutoffs)
+
+        silicons = [i for i, X in enumerate(atoms) if X == 'Si']
+        oxygens = [i for i, X in enumerate(atoms) if X == 'O']
+        hydrogens = [i for i, X in enumerate(atoms) if X == 'H']
 
         minimal_clusters = []
         for (OH1_group, OH2_group) in viable_OH_pairs:
@@ -232,7 +236,7 @@ class Silanols():
                     if atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens:
                         j_neighbors = bonds[1][bonds[0] == j]
                         m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
-                        if numpy.intersect1d(chasis_silicons, j_neighbors).shape[0] >= 2:
+                        if numpy.intersect1d(chasis_silicons, j_neighbors).shape[0] > 1:
                             chasis_oxygens.append(j)
                             cluster_atoms.insert(m, 'O')
                             cluster_coords.insert(m, cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
@@ -262,24 +266,16 @@ class Silanols():
             podal_hydrogens = []
             for n, i in enumerate(podal_oxygens):
                 i_neighbors = bonds[1][bonds[0] == i]
-                if i_neighbors.shape[0] != 2:
-                    print('carve_minimal_clusters(): O {:d} is bonded to {:d} atoms'.format(i+1, i_neighbors.shape[0]))
-                for j in i_neighbors:
-                    if atoms[j] not in ['Si', 'H']:
-                        print('carve_minimal_clusters(): O {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
-                for j in i_neighbors:
+                silicons = [j for j in i_neighbors if atoms[j] == 'Si']
+                candidates = [silicons[j] for j in numpy.argsort(slab.get_distances(i, silicons, mic=True))] # [:2]]
+                for j in candidates:
                     if j not in peripheral_hydrogens + chasis_silicons:
                         m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
-                        if atoms[j] == 'H':
-                            podal_hydrogens.append(j)
-                            cluster_atoms.append('H')
-                            cluster_coords.append(cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
-                        elif atoms[j] == 'Si':
-                            podal_hydrogens.append(j)
-                            cluster_atoms.append('H')
-                            axis = slab.get_distance(i, j, mic=True, vector=True)
-                            axis = axis / numpy.linalg.norm(axis)
-                            cluster_coords.append(cluster_coords[m + n] + axis * OH_bond_length)
+                        podal_hydrogens.append(j)
+                        cluster_atoms.append('H')
+                        axis = slab.get_distance(i, j, mic=True, vector=True)
+                        axis = axis / numpy.linalg.norm(axis)
+                        cluster_coords.append(cluster_coords[m + n] + axis * OH_bond_length)
 
             cluster = Atoms(cluster_atoms, cluster_coords)
             minimal_clusters.append(cluster)
@@ -392,7 +388,7 @@ if __name__ == '__main__':
 
 
     clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp',
-            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 1.8, ('O', 'H'): 1.2})
+            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2})
     print('--- MAIN ---')
     print('Atoms')
     atoms = clusters.slab.get_chemical_symbols()
