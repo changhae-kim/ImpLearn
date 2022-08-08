@@ -266,7 +266,7 @@ class Gaussian():
             if not dry_run:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        if check_normal_termination('{:s}.log'.format(label)):
+        if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
             gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
             return energies[0], gibbs_energy, clusters[0]
@@ -279,9 +279,11 @@ class Gaussian():
             if not dry_run:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+        if os.path.exists('{:s}.log'.format(label)):
+            energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+            return energies, clusters
 
-        return energies, clusters
+        return
 
     def run_transition_optimization(self, label, dry_run=False):
 
@@ -289,7 +291,7 @@ class Gaussian():
             if not dry_run:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        if check_normal_termination('{:s}.log'.format(label)):
+        if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
             gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
             if check_geometry(clusters[-1], self.transition_criteria):
