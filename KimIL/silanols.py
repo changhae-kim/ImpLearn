@@ -36,6 +36,32 @@ class Silanols():
             slab.set_cell(pbc)
         return slab
 
+    def analyze_bonds (self, slab=None, bond_cutoffs=None):
+
+        if slab is None:
+            slab = self.slab
+        if bond_cutoffs is None:
+            bond_cutoffs = self.bond_cutoffs
+
+        atoms = slab.get_chemical_symbols()
+        bonds = neighbor_list('ij', slab, bond_cutoffs)
+
+        coord_numbers = {'Si': 4, 'O': 2, 'H': 1}
+        issues = []
+        for i, X in enumerate(atoms):
+            i_neighbors = bonds[1][bonds[0] == i]
+            if i_neighbors.shape[0] != coord_numbers[X]:
+                issues.append([X, i, i_neighbors])
+
+        print('Bonding Analysis')
+        for X, i, i_neighbors in issues:
+            message = '{:s}{:d} is bonded to'.format(X, i+1)
+            for j in i_neighbors:
+                message += ' {:s}{:d} {:f}'.format(atoms[j], j+1, slab.get_distance(i, j, mic=True))
+            print(message)
+
+        return
+
     def find_OH_groups(self, slab=None, bond_cutoffs=None, exclude_waters=True):
 
         if slab is None:
@@ -50,28 +76,13 @@ class Silanols():
         for i, X in enumerate(atoms):
             if X == 'H':
                 H_neighbors = bonds[1][bonds[0] == i]
-                if H_neighbors.shape[0] != 1:
-                    print('find_OH_groups(): H {:d} is bonded to {:d} atoms'.format(i+1, H_neighbors.shape[0]))
-                for j in H_neighbors:
-                    if atoms[j] != 'O':
-                        print('find_OH_groups(): H {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
                 for j in H_neighbors:
                     if atoms[j] == 'O':
                         O_neighbors = bonds[1][bonds[0] == j]
-                        if O_neighbors.shape[0] != 2:
-                            print('find_OH_groups(): O {:d} is bonded to {:d} atoms'.format(j+1, O_neighbors.shape[0]))
-                        for k in O_neighbors:
-                            if atoms[k] not in ['Si', 'H']:
-                                print('find_OH_groups(): O {:d} is bonded to {:s} {:d}'.format(j+1, atoms[k], k+1))
                         if exclude_waters:
                             if 'Si' not in [atoms[i] for i in O_neighbors]:
                                 continue
-                            else:
-                                OH_groups.append([i, j])
-                        else:
-                            if 'Si' not in [atoms[i] for i in O_neighbors]:
-                                print('find_OH_groups(): O {:d} is not bonded to Si'.format(j+1))
-                            OH_groups.append([i, j])
+                        OH_groups.append([i, j])
 
         return OH_groups
 
@@ -93,20 +104,6 @@ class Silanols():
                 if n > m:
                     O1_neighbors = bonds[1][bonds[0] == OH1_group[1]]
                     O2_neighbors = bonds[1][bonds[0] == OH2_group[1]]
-                    if O1_neighbors.shape[0] != 2:
-                        print('find_geminal_OH_pairs(): O {:d} is bonded to {:d} atoms'.format(OH1_group[1]+1, O1_neighbors.shape[0]))
-                    for i in O1_neighbors:
-                        if atoms[i] not in ['Si', 'H']:
-                            print('find_geminal_OH_pairs(): O {:d} is bonded to {:s} {:d}'.format(OH1_group[1]+1, atoms[i], i+1))
-                    if 'Si' not in [atoms[i] for i in O1_neighbors]:
-                        print('find_geminal_OH_pairs(): O {:d} is not bonded to Si'.format(OH1_group[1]+1))
-                    if O2_neighbors.shape[0] != 2:
-                        print('find_geminal_OH_pairs(): O {:d} is bonded to {:d} atoms'.format(OH2_group[1]+1, O2_neighbors.shape[0]))
-                    for i in O2_neighbors:
-                        if atoms[i] not in ['Si', 'H']:
-                            print('find_geminal_OH_pairs(): O {:d} is bonded to {:s} {:d}'.format(OH2_group[1]+1, atoms[i], i+1))
-                    if 'Si' not in [atoms[i] for i in O2_neighbors]:
-                        print('find_geminal_OH_pairs(): O {:d} is not bonded to Si'.format(OH2_group[1]+1))
                     for i in numpy.intersect1d(O1_neighbors, O2_neighbors):
                         if atoms[i] == 'Si':
                             geminal_OH_pairs.append([OH1_group, OH2_group])
@@ -131,20 +128,6 @@ class Silanols():
                 if n > m:
                     O1_neighbors = bonds[1][bonds[0] == OH1_group[1]]
                     O2_neighbors = bonds[1][bonds[0] == OH2_group[1]]
-                    if O1_neighbors.shape[0] != 2:
-                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} atoms'.format(OH1_group[1]+1, O1_neighbors.shape[0]))
-                    for i in O1_neighbors:
-                        if atoms[i] not in ['Si', 'H']:
-                            print('find_vicinal_OH_pairs(): O {:d} is bonded to {:s} {:d}'.format(OH1_group[1]+1, atoms[i], i+1))
-                    if 'Si' not in [atoms[i] for i in O1_neighbors]:
-                        print('find_vicinal_OH_pairs(): O {:d} is not bonded to Si'.format(OH1_group[1]+1))
-                    if O2_neighbors.shape[0] != 2:
-                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} atoms'.format(OH2_group[1]+1, O2_neighbors.shape[0]))
-                    for i in O2_neighbors:
-                        if atoms[i] not in ['Si', 'H']:
-                            print('find_vicinal_OH_pairs(): O {:d} is bonded to {:s} {:d}'.format(OH2_group[1]+1, atoms[i], i+1))
-                    if 'Si' not in [atoms[i] for i in O2_neighbors]:
-                        print('find_vicinal_OH_pairs(): O {:d} is not bonded to Si'.format(OH2_group[1]+1))
                     geminal = False
                     for i in numpy.intersect1d(O1_neighbors, O2_neighbors):
                         if atoms[i] == 'Si':
@@ -155,22 +138,6 @@ class Silanols():
                     Si2_candidates = [i for i in O2_neighbors if atoms[i] == 'Si']
                     Si1_candidate_neighbors = [bonds[1][bonds[0] == i] for i in Si1_candidates]
                     Si2_candidate_neighbors = [bonds[1][bonds[0] == i] for i in Si2_candidates]
-                    if len(Si1_candidates) != 1:
-                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} Si atoms'.format(OH1_group[1]+1, len(Si1_candidates)))
-                    for i, Si1_neighbors in zip(Si1_candidates, Si1_candidate_neighbors):
-                        if Si1_neighbors.shape[0] != 4:
-                            print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:d} atoms'.format(i+1, Si1_neighbors.shape[0]))
-                        for j in Si1_neighbors:
-                            if atoms[j] != 'O':
-                                print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
-                    if len(Si2_candidates) != 1:
-                        print('find_vicinal_OH_pairs(): O {:d} is bonded to {:d} Si atoms'.format(OH2_group[1]+1, len(Si2_candidates)))
-                    for i, Si2_neighbors in zip(Si2_candidates, Si2_candidate_neighbors):
-                        if Si2_neighbors.shape[0] != 4:
-                            print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:d} atoms'.format(i+1, Si2_neighbors.shape[0]))
-                        for j in Si2_neighbors:
-                            if atoms[j] != 'O':
-                                print('find_vicinal_OH_pairs(): Si {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
                     for i in numpy.intersect1d(numpy.concatenate(Si1_candidate_neighbors), numpy.concatenate(Si2_candidate_neighbors)):
                         if atoms[i] == 'O':
                             vicinal_OH_pairs.append([OH1_group, OH2_group])
@@ -199,7 +166,7 @@ class Silanols():
                         if exclude_geminals:
                             geminal = False
                             for (OH3_group, OH4_group) in geminal_OH_pairs:
-                                if OH1_group[1] in [OH3_group[1], OH4_group[1]] or OH2_group[1] in [OH3_group[1], OH4_group[1]]:
+                                if OH1_group[1] in [OH3_group[1], OH4_group[1]] and OH2_group[1] in [OH3_group[1], OH4_group[1]]:
                                     geminal = True
                                     break
                             if geminal:
@@ -251,13 +218,6 @@ class Silanols():
             chasis_silicons = []
             for n, i in enumerate(peripheral_oxygens):
                 i_neighbors = bonds[1][bonds[0] == i]
-                if i_neighbors.shape[0] != 2:
-                    print('carve_minimal_clusters(): O {:d} is bonded to {:d} atoms'.format(i+1, i_neighbors.shape[0]))
-                for j in i_neighbors:
-                    if atoms[j] not in ['Si', 'H']:
-                        print('carve_minimal_clusters(): O {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
-                if 'Si' not in [atoms[j] for j in i_neighbors]:
-                    print('carve_minimal_clusters(): O {:d} is not bonded to Si'.format(i+1))
                 for j in i_neighbors:
                     if atoms[j] == 'Si' and j not in chasis_silicons:
                         chasis_silicons.append(j)
@@ -268,11 +228,6 @@ class Silanols():
             podal_oxygens = []
             for n, i in enumerate(chasis_silicons):
                 i_neighbors = bonds[1][bonds[0] == i]
-                if i_neighbors.shape[0] != 4:
-                    print('carve_minimal_clusters(): Si {:d} is bonded to {:d} atoms'.format(i+1, i_neighbors.shape[0]))
-                for j in i_neighbors:
-                    if atoms[j] != 'O':
-                        print('carve_minimal_clusters(): Si {:d} is bonded to {:s} {:d}'.format(i+1, atoms[j], j+1))
                 for j in i_neighbors:
                     if atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens:
                         j_neighbors = bonds[1][bonds[0] == j]
@@ -436,26 +391,31 @@ class Silanols():
 if __name__ == '__main__':
 
 
-    clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp')
+    clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp',
+            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 1.8, ('O', 'H'): 1.2})
     print('--- MAIN ---')
-    print('atoms')
-    print(clusters.slab.get_chemical_symbols())
-    print('bonds')
-    print(list(zip(*neighbor_list('ij', clusters.slab, clusters.bond_cutoffs))))
-    print('OH_groups')
+    print('Atoms')
+    atoms = clusters.slab.get_chemical_symbols()
+    print(len(atoms))
+    print(atoms)
+    print('Bonds')
+    bonds = [[i, j] for i, j in zip(*neighbor_list('ij', clusters.slab, clusters.bond_cutoffs)) if i < j]
+    print(len(bonds))
+    print(bonds)
+    print('OH Groups')
     print(len(clusters.OH_groups))
     print(clusters.OH_groups)
-    print('geminal_OH_pairs')
+    print('Geminal OH Pairs')
     print(len(clusters.geminal_OH_pairs))
     print(clusters.geminal_OH_pairs)
-    print('vicinal_OH_pairs')
+    print('Vicinal OH Pairs')
     print(len(clusters.vicinal_OH_pairs))
     print(clusters.vicinal_OH_pairs)
-    print('viable_OH_pairs')
+    print('Viable OH Pairs')
     print(len(clusters.viable_OH_pairs))
     print(clusters.viable_OH_pairs)
+    clusters.analyze_bonds()
     clusters.analyze_distances('A_d{:s}{:s}.png')
     clusters.save_clusters('A_{:04d}.xyz', 'xyz')
-
 
 
