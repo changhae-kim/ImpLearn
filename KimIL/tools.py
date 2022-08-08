@@ -46,7 +46,7 @@ def rotate_vector(vector, axis, angle, degrees=True):
         rotated = parallel + perpend1 * numpy.cos(angle) + perpend2 * numpy.sin(angle)
     return rotated
 
-def make_zmatrix(atoms, coords):
+def create_zmatrix(atoms, coords):
     X_atoms = []
     X_coords = []
     H_atoms = []
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         molecule = read(file_path, 0, 'xyz')
         atoms = molecule.get_chemical_symbols()
         coords = molecule.get_positions()
-        atoms, indices, coords = make_zmatrix(atoms, coords)
+        atoms, indices, coords = create_zmatrix(atoms, coords)
         print(atoms)
         print([i+1 for i in indices])
         print(coords)
@@ -127,7 +127,7 @@ if __name__ == '__main__':
         molecule = read(file_path, 0, 'xyz')
         atoms = molecule.get_chemical_symbols()
         coords = molecule.get_positions()
-        atoms, indices, coords = make_zmatrix(atoms[6:18], coords[6:18])
+        atoms, indices, coords = create_zmatrix(atoms[6:18], coords[6:18])
         print(atoms)
         print([i+1 for i in indices])
         print(coords)
