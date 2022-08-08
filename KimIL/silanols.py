@@ -197,10 +197,6 @@ class Silanols():
         atoms = slab.get_chemical_symbols()
         bonds = neighbor_list('ij', slab, bond_cutoffs)
 
-        silicons = [i for i, X in enumerate(atoms) if X == 'Si']
-        oxygens = [i for i, X in enumerate(atoms) if X == 'O']
-        hydrogens = [i for i, X in enumerate(atoms) if X == 'H']
-
         minimal_clusters = []
         for (OH1_group, OH2_group) in viable_OH_pairs:
 
@@ -266,10 +262,8 @@ class Silanols():
             podal_hydrogens = []
             for n, i in enumerate(podal_oxygens):
                 i_neighbors = bonds[1][bonds[0] == i]
-                silicons = [j for j in i_neighbors if atoms[j] == 'Si']
-                candidates = [silicons[j] for j in numpy.argsort(slab.get_distances(i, silicons, mic=True))] # [:2]]
-                for j in candidates:
-                    if j not in peripheral_hydrogens + chasis_silicons:
+                for j in i_neighbors:
+                    if atoms[j] == 'Si' and j not in peripheral_hydrogens + chasis_silicons:
                         m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
                         podal_hydrogens.append(j)
                         cluster_atoms.append('H')
