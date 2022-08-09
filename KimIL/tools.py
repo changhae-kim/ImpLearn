@@ -9,20 +9,22 @@ def calculate_k(T, G_r, G_t, log=False):
     T = numpy.array(T)
     G_r = numpy.array(G_r)
     G_t = numpy.array(G_t)
+    logk = numpy.log(kB * T / h) - (G_t - G_r) / (kB * T)
     if log:
-        return numpy.log(kB * T / h) - (G_t - G_r) / (kB * T)
+        return logk
     else:
-        return (kB * T / h) * numpy.exp(-(G_t - G_r) / (kB * T))
+        return numpy.exp(logk)
 
 def calculate_K(T, G_r, G_p, log=False):
     kB = 1.380649e-23 / 4.3597447222071e-18
     T = numpy.array(T)
     G_r = numpy.array(G_r)
     G_p = numpy.array(G_p)
+    logK = -(G_p - G_r) / (kB * T)
     if log:
-        return -(G_p - G_r) / (kB * T)
+        return logK
     else:
-        return numpy.exp(-(G_p - G_r) / (kB * T))
+        return numpy.exp(logK)
 
 def calculate_rate(T, C_a, logk=None, logK=None, k=None, K=None, G_a=None, G_b=None, G_r=None, G_t=None, log=False):
 
