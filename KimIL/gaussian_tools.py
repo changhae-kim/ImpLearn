@@ -50,49 +50,76 @@ def read_geometry_optimization(file_path):
         clusters.append(Atoms(atoms, coords))
     return energies, clusters
 
-def read_thermochemistry(file_path):
+def read_thermochemistry(file_path, temp=None, pressure=None,
+        elec=True, trans=False, rot=False, vib=True):
 
-    Ha = 627.5094740631
+    kB = 1.380649e-23 / 4.3597447222071e-18
+    K = 6.62607015e-34 * 2.99792458e+8 / 1.380649e-23 * 100.0
 
-    T = numpy.nan
-    H_tot = numpy.nan
-    S_tot = numpy.nan
-    H_trans = numpy.nan
-    S_trans = numpy.nan
-    H_rot = numpy.nan
-    S_rot = numpy.nan
+    T_0 = numpy.nan
+    P_0 = numpy.nan
+    E_e = numpy.nan
+    log_Q_e = numpy.nan
+    log_Q_t = numpy.nan
+    log_Q_r = numpy.nan
+    freqs = []
 
     f = open(file_path, 'rt')
     status = 0
     for line in f:
         if status == 0:
-            if line.strip().startswith('Temperature'):
-                T = float(line.split()[1])
+            if line.strip().startswith('SCF Done:'):
+                E_e = float(line.split()[4])
+            elif line.strip().startswith('Harmonic frequencies'):
                 status = 1
         elif status == 1:
-            if line.strip().startswith('Sum of electronic and thermal Enthalpies='):
-                H_tot = float(line.split()[-1])
+            if line.strip().startswith('Frequencies'):
+                freqs += [float(x) for x in line.split()[-3:]]
+            elif line.strip().startswith('- Thermochemistry -'):
                 status = 2
         elif status == 2:
-            if line.strip().startswith('E (Thermal)'):
+            if line.strip().startswith('Temperature'):
+                T_0 = float(line.split()[1])
+                P_0 = float(line.split()[4])
+            elif line.strip().endswith('Ln(Q)'):
                 status = 3
         elif status == 3:
-            if line.strip().startswith('Total'):
-                S_tot = float(line.split()[-1])
+            if line.strip().startswith('Electronic'):
+                log_Q_e = float(line.split()[-1])
             elif line.strip().startswith('Translational'):
-                H_trans = float(line.split()[1])
-                S_trans = float(line.split()[-1])
+                log_Q_t = float(line.split()[-1])
             elif line.strip().startswith('Rotational'):
-                H_rot = float(line.split()[1])
-                S_rot = float(line.split()[-1])
-            elif line.strip().startswith('Q'):
+                log_Q_r = float(line.split()[-1])
+            elif line.strip().startswith('-----'):
                 status = 4
                 break
     f.close()
 
-    H = H_tot - (H_trans + H_rot) / Ha
-    S = (S_tot - S_trans - S_rot) / Ha / 1000.0
-    G = H - T * S
+    if temp is None:
+        T = T_0
+    else:
+        T = temp
+    if pressure is None:
+        P = P_0
+    else:
+        P = pressure
+
+    S_e = kB * log_Q_e
+
+    E_t = 1.5 * kB * T
+    S_t = kB * (log_Q_t + 2.5 * numpy.log(T/T_0) - numpy.log(P/P_0) + 1.0 + 1.5)
+
+    E_r = 1.5 * kB * T
+    S_r = kB * (log_Q_r + 1.5 * numpy.log(T/T_0) + 1.5)
+
+    freqs = numpy.array(freqs)
+    T_v = freqs[freqs > 0.0] * K
+    E_v = kB * numpy.sum( T_v * ( 0.5 + 1.0/(numpy.exp(T_v/T) - 1.0) ) )
+    S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1.0) - numpy.log(1.0 - numpy.exp(-T_v/T)) )
+
+    E = elec * E_e + trans * E_t + rot * E_r + vib * E_v
+    S = elec * S_e + trans * S_t + rot * S_r + vib * S_v
+    G = E + kB * T - T * S
 
     return G
 
@@ -170,11 +197,19 @@ def check_geometry(cluster, criteria):
 
 if __name__ == '__main__':
 
-    '''
-    print('new algorithm', read_thermochemistry('tests/1_b.log'))
-    print('old algorithm', read_thermochemistry_salman('tests/1_b.log', new_constants=True))
-    print('old constants', read_thermochemistry_salman('tests/1_b.log', new_constants=False))
+
     print('salman script', -594.3547231345688)
-    '''
+    print('salman algorithm with old constants', read_thermochemistry_salman('tests/1_b.log', new_constants=False))
+    print('salman algorithm with new constants', read_thermochemistry_salman('tests/1_b.log', new_constants=True))
+    print('new algorithm', read_thermochemistry('tests/1_b.log'))
+
+    elec, trans, rot, vib = True, True, True, True
+    print('act 300 K 1 atm', read_thermochemistry('tests/1_b.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('est 600 K 1 atm', read_thermochemistry('tests/1_b.log', temp=600.0, elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 600 K 1 atm', read_thermochemistry('tests/1_b_T.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('est 300 K 2 atm', read_thermochemistry('tests/1_b.log', pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 300 K 2 atm', read_thermochemistry('tests/1_b_P.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('est 600 K 2 atm', read_thermochemistry('tests/1_b.log', temp=600.0, pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 600 K 2 atm', read_thermochemistry('tests/1_b_TP.log', elec=elec, trans=trans, rot=rot, vib=vib))
 
 

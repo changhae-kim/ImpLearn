@@ -90,19 +90,19 @@ class Gaussian():
             for i, cluster in enumerate(self.catalysts):
                 label = '{:s}_B_{:d}'.format(prefix, i)
                 self.catalyst_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0], self.temp, self.pressure)
+                self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0])
 
         if self.reactant_optimizations == []:
             for i, cluster in enumerate(self.reactants):
                 label = '{:s}_R_{:d}'.format(prefix, i)
                 self.reactant_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1], self.temp, self.pressure)
+                self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1])
 
         if self.product_optimizations == []:
             for i, cluster in enumerate(self.products):
                 label = '{:s}_P_{:d}'.format(prefix, i)
                 self.product_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2], self.temp, self.pressure)
+                self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2])
 
         if self.transition_states == []:
 
@@ -110,7 +110,7 @@ class Gaussian():
                 for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
                     label = '{:s}_T_{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3], self.temp, self.pressure)
+                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3])
 
             elif self.scan_reverse and self.product_energies != [] and self.scans == []:
                 for i, cluster in enumerate(product_clusters):
@@ -130,11 +130,11 @@ class Gaussian():
                 for i, cluster in enumerate(self.transition_states):
                     label = '{:s}_T_{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3], self.temp, self.pressure)
+                    self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3])
 
         return
 
-    def setup_geometry_optimization(self, label, cluster, charge, mult, temp, pressure):
+    def setup_geometry_optimization(self, label, cluster, charge, mult):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -145,7 +145,7 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=temp, pressure=pressure)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=self.temp, pressure=self.pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
@@ -192,7 +192,7 @@ class Gaussian():
 
         return
 
-    def setup_transition_state_optimization(self, label, cluster, charge, mult, temp, pressure):
+    def setup_transition_state_optimization(self, label, cluster, charge, mult):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -203,7 +203,7 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=temp, pressure=pressure)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=self.temp, pressure=self.pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
@@ -271,7 +271,7 @@ class Gaussian():
 
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
+            gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
             return energies[0], gibbs_energy, clusters[0]
 
         return
@@ -296,7 +296,7 @@ class Gaussian():
 
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            gibbs_energy = read_thermochemistry('{:s}.log'.format(label))
+            gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
             if check_geometry(clusters[-1], self.transition_state_criteria):
                 return energies[0], gibbs_energy, clusters[0]
 
