@@ -5,6 +5,8 @@ from ase.io import read, write
 from ase.neighborlist import neighbor_list
 from matplotlib import pyplot
 
+from .silanols_tools import reorder_podal_oxygens
+
 
 class Silanols():
 
@@ -50,7 +52,7 @@ class Silanols():
         issues = []
         for i, X in enumerate(atoms):
             i_neighbors = bonds[1][bonds[0] == i]
-            if i_neighbors.shape[0] != coord_numbers[X]:
+            if len(i_neighbors) != coord_numbers[X]:
                 issues.append([X, i, i_neighbors])
 
         print('Bonding Analysis')
@@ -232,7 +234,7 @@ class Silanols():
                     if atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens:
                         j_neighbors = bonds[1][bonds[0] == j]
                         m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
-                        if numpy.intersect1d(chasis_silicons, j_neighbors).shape[0] > 1:
+                        if len(numpy.intersect1d(chasis_silicons, j_neighbors)) > 1:
                             chasis_oxygens.append(j)
                             cluster_atoms.insert(m, 'O')
                             cluster_coords.insert(m, cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
@@ -246,7 +248,7 @@ class Silanols():
                 m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
                 p = m + len(chasis_silicons)
                 q = m + len(chasis_silicons) + len(podal_oxygens)
-                reordered = self.reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
+                reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
                 old_podals = podal_oxygens
                 old_coords = cluster_coords
                 podal_oxygens = []
@@ -275,74 +277,6 @@ class Silanols():
             minimal_clusters.append(cluster)
 
         return minimal_clusters
-
-    def reorder_podal_oxygens(self, coords, O1_coord, O2_coord, Si1_coord, Si2_coord, max_iter=50):
-
-        origin = 0.5 * (Si1_coord + Si2_coord)
-        centered = coords - origin
-        xaxis = Si2_coord - Si1_coord
-        xaxis = xaxis / numpy.linalg.norm(xaxis)
-        zaxis = 0.5 * (O1_coord + O2_coord - Si1_coord - Si2_coord)
-        zaxis = zaxis / numpy.linalg.norm(zaxis)
-        yaxis = numpy.cross(zaxis, xaxis)
-
-        if len(coords) not in [2, 4, 6]:
-            print('number of podal oxygens is {:d}'.format(len(coords)))
-
-        centered1 = coords - Si1_coord
-        centered2 = coords - Si2_coord
-        reordered1 = []
-        reordered2 = []
-        for i, (coord1, coord2) in enumerate(zip(centered1, centered2)):
-            if numpy.linalg.norm(coord1) < numpy.linalg.norm(coord2):
-                reordered1.append(i)
-            else:
-                reordered2.append(i)
-
-        zaxis1 = O1_coord - Si1_coord
-        zaxis1 = zaxis1 / numpy.linalg.norm(zaxis1)
-        status = -1
-        for i in range(max_iter):
-            if status == 0:
-                break
-            else:
-                status = 0
-                for i, _ in enumerate(reordered1[:-1]):
-                    if numpy.dot(numpy.cross(zaxis1, centered1[reordered1[i]]), centered1[reordered1[i+1]]) < 0.0:
-                        reordered1[i], reordered1[i+1] = reordered1[i+1], reordered1[i]
-                        status = -1
-                        break
-
-        zaxis2 = O2_coord - Si2_coord
-        zaxis2 = zaxis2 / numpy.linalg.norm(zaxis2)
-        status = -1
-        for i in range(max_iter):
-            if status == 0:
-                break
-            else:
-                status = 0
-                for i, _ in enumerate(reordered2[:-1]):
-                    if numpy.dot(numpy.cross(zaxis2, centered2[reordered2[i]]), centered2[reordered2[i+1]]) < 0.0:
-                        reordered2[i], reordered2[i+1] = reordered2[i+1], reordered2[i]
-                        status = -1
-                        break
-
-        if len(reordered1) > 2:
-            if len(reordered2) > 2:
-                nm = numpy.argmin([numpy.linalg.norm(centered[i]-centered[j]) for i in reordered1 for j in reordered2])
-                n = nm//len(reordered2)
-                m = nm%len(reordered2)
-                reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
-                reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
-            else:
-                n = numpy.argmin([numpy.linalg.norm(centered[i]-centered[0]) for i in reordered1])
-                reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
-        elif len(reordered2) > 2:
-            m = numpy.argmin([numpy.linalg.norm(centered[0]-centered[j]) for j in reordered2])
-            reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
-        reordered = reordered1 + reordered2
-
-        return reordered
 
     def analyze_distances(self, file_path, slab=None):
 

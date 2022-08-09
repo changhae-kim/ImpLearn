@@ -3,16 +3,35 @@ import numpy
 from ase import Atoms
 
 
-def rotate_vector(vector, axis, angle, degrees=True):
-    unit = axis / numpy.linalg.norm(axis)
-    parallel = numpy.inner(vector, unit) * unit
-    perpend1 = vector - parallel
-    perpend2 = numpy.cross(unit, perpend1)
-    if degrees:
-        rotated = parallel + perpend1 * numpy.cos(numpy.pi*angle/180.0) + perpend2 * numpy.sin(numpy.pi*angle/180.0)
-    else:
-        rotated = parallel + perpend1 * numpy.cos(angle) + perpend2 * numpy.sin(angle)
-    return rotated
+def calculate_k(T, G_r, G_t):
+    kB = 1.380649e-23 / 4.3597447222071e-18
+    h = 6.62607015e-34 / 4.3597447222071e-18
+    T = numpy.array(T)
+    G_r = numpy.array(G_r)
+    G_t = numpy.array(G_t)
+    return (kB * T / h) * numpy.exp(-(G_t - G_r) / (kB * T))
+
+def calculate_logk(T, G_r, G_t):
+    kB = 1.380649e-23 / 4.3597447222071e-18
+    h = 6.62607015e-34 / 4.3597447222071e-18
+    T = numpy.array(T)
+    G_r = numpy.array(G_r)
+    G_t = numpy.array(G_t)
+    return numpy.log(kB * T / h) - (G_t - G_r) / (kB * T)
+
+def calculate_K(T, G_r, G_p):
+    kB = 1.380649e-23 / 4.3597447222071e-18
+    T = numpy.array(T)
+    G_r = numpy.array(G_r)
+    G_p = numpy.array(G_p)
+    return numpy.exp(-(G_p - G_r) / (kB * T))
+
+def calculate_logK(T, G_r, G_p):
+    kB = 1.380649e-23 / 4.3597447222071e-18
+    T = numpy.array(T)
+    G_r = numpy.array(G_r)
+    G_p = numpy.array(G_p)
+    return -(G_p - G_r) / (kB * T)
 
 def create_zmatrix(atoms, coords):
     X_atoms = []
