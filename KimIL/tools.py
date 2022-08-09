@@ -3,39 +3,61 @@ import numpy
 from ase import Atoms
 
 
-def calculate_k(T, G_r, G_t):
+def calculate_k(T, G_r, G_t, log=False):
     kB = 1.380649e-23 / 4.3597447222071e-18
     h = 6.62607015e-34 / 4.3597447222071e-18
     T = numpy.array(T)
     G_r = numpy.array(G_r)
     G_t = numpy.array(G_t)
-    k = (kB * T / h) * numpy.exp(-(G_t - G_r) / (kB * T))
-    return k
+    if log:
+        return numpy.log(kB * T / h) - (G_t - G_r) / (kB * T)
+    else:
+        return (kB * T / h) * numpy.exp(-(G_t - G_r) / (kB * T))
 
-def calculate_K(T, G_r, G_p):
+def calculate_K(T, G_r, G_p, log=False):
     kB = 1.380649e-23 / 4.3597447222071e-18
     T = numpy.array(T)
     G_r = numpy.array(G_r)
     G_p = numpy.array(G_p)
-    K = numpy.exp(-(G_p - G_r) / (kB * T))
-    return K
+    if log:
+        return -(G_p - G_r) / (kB * T)
+    else:
+        return numpy.exp(-(G_p - G_r) / (kB * T))
 
-def calculate_rate(T, C_a, k=None, K=None, G_a=None, G_b=None, G_r=None, G_t=None):
+def calculate_rate(T, C_a, logk=None, logK=None, k=None, K=None, G_a=None, G_b=None, G_r=None, G_t=None, log=False):
+
     kB = 1.380649e-23 / 4.3597447222071e-18
     h = 6.62607015e-34 / 4.3597447222071e-18
-    C_a = numpy.array(C_a)
-    if k is not None:
+
+    if logk is not None:
+        logk = numpy.array(logk)
+    elif k is not None:
         logk = numpy.log(k)
     else:
-        logk = numpy.log(calculate_k(G_r, G_t, T))
-    if K is not None:
+        T = numpy.array(T)
+        G_r = numpy.array(G_r)
+        G_t = numpy.array(G_t)
+        logk = calculate_k(T, G_r, G_t, log=True)
+
+    if logK is not None:
+        logKc = logK + numpy.log(C_a)
+    elif K is not None:
+        C_a = numpy.array(C_a)
+        K = numpy.array(K)
         logKc = numpy.log(K * C_a)
     else:
+        T = numpy.array(T)
         G_a = numpy.array(G_a)
         G_b = numpy.array(G_b)
-        logKc = numpy.log(calculate_K(G_a + G_b, G_r, T) * C_a)
-    rates = numpy.exp( logk + logKc - numpy.log(1.0 + numpy.exp(logKc)) )
-    return rates
+        G_r = numpy.array(G_r)
+        logKc = calculate_K(T, G_a + G_b, G_r, log=True) + numpy.log(C_a)
+
+    log_rate = logk + logKc - numpy.log1p(numpy.exp(logKc))
+
+    if log:
+        return log_rate
+    else:
+        return numpy.exp(log_rate)
 
 def rotate_vector(vector, axis, angle, degrees=True):
     unit = axis / numpy.linalg.norm(axis)
