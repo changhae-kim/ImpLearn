@@ -88,19 +88,19 @@ class Gaussian():
 
         if self.product_optimizations == []:
             for i, cluster in enumerate(self.catalysts):
-                label = '{:s}_B_{:d}'.format(prefix, i)
+                label = '{:s}_b{:d}'.format(prefix, i)
                 self.catalyst_optimizations.append(label)
                 self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0])
 
         if self.reactant_optimizations == []:
             for i, cluster in enumerate(self.reactants):
-                label = '{:s}_R_{:d}'.format(prefix, i)
+                label = '{:s}_r{:d}'.format(prefix, i)
                 self.reactant_optimizations.append(label)
                 self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1])
 
         if self.product_optimizations == []:
             for i, cluster in enumerate(self.products):
-                label = '{:s}_P_{:d}'.format(prefix, i)
+                label = '{:s}_p{:d}'.format(prefix, i)
                 self.product_optimizations.append(label)
                 self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2])
 
@@ -108,19 +108,19 @@ class Gaussian():
 
             if self.scan_energies != [] and self.transition_state_optimizations == []:
                 for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
-                    label = '{:s}_T_{:d}'.format(prefix, i)
+                    label = '{:s}_t{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
                     self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3])
 
             elif self.scan_reverse and self.product_energies != [] and self.scans == []:
                 for i, cluster in enumerate(product_clusters):
-                    label = '{:s}_S_{:d}'.format(prefix, i)
+                    label = '{:s}_s{:d}'.format(prefix, i)
                     self.scans.append(label)
                     self.setup_scan(label, cluster, self.charges[3], self.mults[3])
 
             elif not self.scan_reverse and self.reactant_energies != [] and self.scans == []:
                 for i, cluster in enumerate(reactant_clusters):
-                    label = '{:s}_S_{:d}'.format(prefix, i)
+                    label = '{:s}_s{:d}'.format(prefix, i)
                     self.scans.append(label)
                     self.setup_scan(label, cluster, self.charges[3], self.mults[3])
 
@@ -128,7 +128,7 @@ class Gaussian():
 
             if self.transition_state_optimizations == []:
                 for i, cluster in enumerate(self.transition_states):
-                    label = '{:s}_T_{:d}'.format(prefix, i)
+                    label = '{:s}_t{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
                     self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3])
 
