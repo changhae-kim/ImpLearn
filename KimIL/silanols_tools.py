@@ -1,18 +1,17 @@
 import numpy
 
 
-def reorder_podal_oxygens(podal_O_coords, O1_coord, O2_coord, Si1_coord, Si2_coord, chasis_oxygens, max_iter=50):
+def reorder_podal_oxygens(O_coords, O1_coord, O2_coord, Si1_coord, Si2_coord, O3_coord=None, max_iter=50):
 
     origin = 0.5 * (Si1_coord + Si2_coord)
-    centered = podal_O_coords - origin
     xaxis = Si2_coord - Si1_coord
     xaxis = xaxis / numpy.linalg.norm(xaxis)
     zaxis = 0.5 * (O1_coord + O2_coord - Si1_coord - Si2_coord)
     zaxis = zaxis / numpy.linalg.norm(zaxis)
     yaxis = numpy.cross(zaxis, xaxis)
 
-    centered1 = podal_O_coords - Si1_coord
-    centered2 = podal_O_coords - Si2_coord
+    centered1 = O_coords - Si1_coord
+    centered2 = O_coords - Si2_coord
     reordered1 = []
     reordered2 = []
     for i, (coord1, coord2) in enumerate(zip(centered1, centered2)):
@@ -51,41 +50,45 @@ def reorder_podal_oxygens(podal_O_coords, O1_coord, O2_coord, Si1_coord, Si2_coo
 
     if len(reordered1) > 2:
         if len(reordered2) > 2:
-            nm = numpy.argmin([numpy.linalg.norm(centered[i] - centered[j]) for i in reordered1 for j in reordered2])
+            nm = numpy.argmin([numpy.linalg.norm(O_coords[i] - O_coords[j]) for i in reordered1 for j in reordered2])
             n, m = numpy.unravel_index(nm, [len(reordered1), len(reordered2)])
             reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
             reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
         elif len(reordered2) > 0:
-            if len(chasis_oxygens) == 0:
-                nm = numpy.argmin([numpy.linalg.norm(centered[i] - centered[j]) for i in reordered1 for j in reordered2])
+            if O3_coord is None:
+                nm = numpy.argmin([numpy.linalg.norm(O_coords[i] - O_coords[j]) for i in reordered1 for j in reordered2])
                 n, m = numpy.unravel_index(nm, [len(reordered1), len(reordered2)])
                 reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
                 reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
             else:
-                n = numpy.argmin([numpy.linalg.norm(centered[i] - centered[reordered2[0]]) for i in reordered1])
+                n = numpy.argmin([numpy.linalg.norm(O_coords[i] - O_coords[reordered2[0]]) for i in reordered1])
+                if numpy.dot(numpy.cross(zaxis1, (O3_coord - Si1_coord)), centered1[reordered1[n]]) > 0.0:
+                    n = (n-1)%len(reordered1)
                 reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
         else:
-            n = numpy.argmin([numpy.linalg.norm(centered[i] - (Si2_coord - origin)) for i in reordered1])
+            n = numpy.argmin([numpy.linalg.norm(O_coords[i] - Si2_coord) for i in reordered1])
             reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
     elif len(reordered2) > 2:
         if len(reordered1) > 0:
-            if len(chasis_oxygens) == 0:
-                nm = numpy.argmin([numpy.linalg.norm(centered[i] - centered[j]) for i in reordered1 for j in reordered2])
+            if O3_coord is None:
+                nm = numpy.argmin([numpy.linalg.norm(O_coords[i] - O_coords[j]) for i in reordered1 for j in reordered2])
                 n, m = numpy.unravel_index(nm, [len(reordered1), len(reordered2)])
                 reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
                 reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
             else:
-                m = numpy.argmin([numpy.linalg.norm(centered[reordered1[-1]] - centered[j]) for j in reordered2])
+                m = numpy.argmin([numpy.linalg.norm(O_coords[reordered1[-1]] - O_coords[j]) for j in reordered2])
+                if numpy.dot(numpy.cross(zaxis2, (O3_coord - Si2_coord)), centered2[reordered2[m]]) < 0.0:
+                    m = (m+1)%len(reordered2)
                 reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
         else:
-            m = numpy.argmin([numpy.linalg.norm((Si1_coord - origin) - centered[j]) for j in reordered2])
+            m = numpy.argmin([numpy.linalg.norm(Si1_coord - O_coords[j]) for j in reordered2])
             reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
     reordered = reordered1 + reordered2
 
     return reordered
 
 
-def permute_podal_atoms(podal_coords, silanol_type='vicinal', right_hand_only=True):
+def permute_podal_atoms(silanol_type='vicinal', podal_coords=None, right_hand_only=True):
 
     permutes = []
 
@@ -95,7 +98,11 @@ def permute_podal_atoms(podal_coords, silanol_type='vicinal', right_hand_only=Tr
         case1 = case1 + [i + 4 for i in case1]
         permutes += [case0, case1]
         if not right_hand_only:
-            permutes += [list(reversed(case0)), list(reversed(case1))]
+            case2 = list(reversed(case0[:4]))
+            case2 = case2 + [i + 4 for i in case2]
+            case3 = list(reversed(case1[:4]))
+            case3 = case3 + [i + 4 for i in case3]
+            permutes += [list(reversed(case2)), list(reversed(case3))]
 
     elif silanols_type == 'nonvicinal':
         case0 = list(range(12))

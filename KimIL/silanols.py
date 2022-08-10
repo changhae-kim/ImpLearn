@@ -146,8 +146,7 @@ class Silanols():
 
         return vicinal_OH_pairs
 
-    def find_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None,
-            exclude_geminals=True, geminal_OH_pairs=None, exclude_vicinals=False, vicinal_OH_pairs=None):
+    def find_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None, exclude_geminals=True, geminal_OH_pairs=None):
 
         if slab is None:
             slab = self.slab
@@ -157,8 +156,6 @@ class Silanols():
             viable_cutoff = self.viable_cutoff
         if geminal_OH_pairs is None:
             geminal_OH_pairs = self.geminal_OH_pairs
-        if vicinal_OH_pairs is None:
-            vicinal_OH_pairs = self.vicinal_OH_pairs
 
         viable_OH_pairs = []
         for n, OH1_group in enumerate(OH_groups):
@@ -172,14 +169,6 @@ class Silanols():
                                     geminal = True
                                     break
                             if geminal:
-                                continue
-                        if exclude_vicinals:
-                            vicinal = False
-                            for (OH3_group, OH4_group) in vicinal_OH_pairs:
-                                if OH1_group[1] in [OH3_group[1], OH4_group[1]] and OH2_group[1] in [OH3_group[1], OH4_group[1]]:
-                                    vicinal = True
-                                    break
-                            if vicinal:
                                 continue
                         viable_OH_pairs.append([OH1_group, OH2_group])
 
@@ -248,7 +237,10 @@ class Silanols():
                 m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
                 p = m + len(chasis_silicons)
                 q = m + len(chasis_silicons) + len(podal_oxygens)
-                reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], chasis_oxygens)
+                if len(chasis_oxygens) > 0:
+                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], cluster_coords[m-1])
+                else:
+                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
                 old_podals = podal_oxygens
                 old_coords = cluster_coords
                 podal_oxygens = []
