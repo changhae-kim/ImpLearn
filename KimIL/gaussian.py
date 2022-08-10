@@ -229,23 +229,20 @@ class Gaussian():
 
         if self.catalyst_energies == []:
             for label in self.catalyst_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
+                optimized_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
                 self.catalyst_energies.append(optimized_energy)
-                self.catalyst_gibbs_energies.append(gibbs_energy)
                 self.catalyst_clusters.append(optimized_cluster)
 
         if self.reactant_energies == []:
             for label in self.reactant_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
+                optimized_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
                 self.reactant_energies.append(optimized_energy)
-                self.reactant_gibbs_energies.append(gibbs_energy)
                 self.reactant_clusters.append(optimized_cluster)
 
         if self.product_energies == []:
             for label in self.product_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
+                optimized_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
                 self.product_energies.append(optimized_energy)
-                self.product_gibbs_energies.append(gibbs_energy)
                 self.product_clusters.append(optimized_cluster)
 
         if self.scan_energies == []:
@@ -256,9 +253,8 @@ class Gaussian():
 
         if self.transition_state_energies == []:
             for label in self.transition_state_optimizations:
-                optimized_energy, gibbs_energy, optimized_cluster = self.run_transition_state_optimization(label, dry_run)
+                optimized_energy, optimized_cluster = self.run_transition_state_optimization(label, dry_run)
                 self.transition_state_energies.append(optimized_energy)
-                self.transition_state_gibbs_energies.append(gibbs_energy)
                 self.transition_state_clusters.append(optimized_cluster)
 
         return
@@ -271,8 +267,7 @@ class Gaussian():
 
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-            return energies[0], gibbs_energy, clusters[0]
+            return energies[0], clusters[0]
 
         return
 
@@ -296,14 +291,70 @@ class Gaussian():
 
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
             if check_geometry(clusters[-1], self.transition_state_criteria):
-                return energies[0], gibbs_energy, clusters[0]
+                return energies[0], clusters[0]
 
         return
 
-    def get_gibbs_energies(self):
-        return self.catalyst_gibbs_energies, self.reactant_gibbs_energies, self.product_gibbs_energies, self.transition_state_gibbs_energies
+    def get_gibbs_energies(self, prefix=None, temp=None, pressure=None):
+
+        if prefix is None:
+            prefix = self.prefix
+        if temp is None:
+            temp = self.temp
+        if pressure is None:
+            pressure = self.pressure
+
+        if self.catalyst_gibbs_energies == []:
+            for label in self.catalyst_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                self.catalyst_gibbs_energies.append(gibbs_energy)
+
+        if self.reactant_gibbs_energies == []:
+            for label in self.reactant_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                self.reactant_gibbs_energies.append(gibbs_energy)
+
+        if self.product_gibbs_energies == []:
+            for label in self.product_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                self.product_gibbs_energies.append(gibbs_energy)
+
+        if self.transition_state_gibbs_energies == []:
+            for label in self.transition_state_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                self.transition_state_gibbs_energies.append(gibbs_energy)
+
+        if temp != self.temp or pressure != self.pressure:
+
+            catalyst_gibbs_energies = []
+            for label in self.catalyst_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                catalyst_gibbs_energies.append(gibbs_energy)
+
+            reactant_gibbs_energies = []
+            for label in self.reactant_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                reactant_gibbs_energies.append(gibbs_energy)
+
+            product_gibbs_energies = []
+            for label in self.product_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                product_gibbs_energies.append(gibbs_energy)
+
+            transition_state_gibbs_energies = []
+            for label in self.transition_state_optimizations:
+                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                transition_state_gibbs_energies.append(gibbs_energy)
+
+        else:
+
+            catalyst_gibbs_energies = self.catalyst_gibbs_energies
+            reactant_gibbs_energies = self.reactant_gibbs_energies
+            product_gibbs_energies = self.product_gibbs_energies
+            transition_state_gibbs_energies = self.transition_state_gibbs_energies
+
+        return catalyst_gibbs_energies, reactant_gibbs_energies, product_gibbs_energies, transition_state_gibbs_energies
 
 
 if __name__ == '__main__':
