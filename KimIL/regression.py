@@ -17,6 +17,7 @@ class KimMLKR(MLKR):
 
     def _loss(self, flatA, X, y):
         cost, grad = super()._loss(flatA, X, y)
+        print(cost, grad)
         if self.regularizer in ['l1', 'L1', 'lasso', 'Lasso', 'LASSO']:
             reg_cost = cost + self.alpha * numpy.sum(numpy.abs(flatA))
             reg_grad = grad + self.alpha * numpy.sign(flatA)
