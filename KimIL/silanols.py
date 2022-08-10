@@ -248,7 +248,7 @@ class Silanols():
                 m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
                 p = m + len(chasis_silicons)
                 q = m + len(chasis_silicons) + len(podal_oxygens)
-                reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
+                reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], chasis_oxygens)
                 old_podals = podal_oxygens
                 old_coords = cluster_coords
                 podal_oxygens = []

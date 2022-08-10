@@ -1,7 +1,7 @@
 import numpy
 
 
-def reorder_podal_oxygens(podal_O_coords, O1_coord, O2_coord, Si1_coord, Si2_coord, max_iter=50):
+def reorder_podal_oxygens(podal_O_coords, O1_coord, O2_coord, Si1_coord, Si2_coord, chasis_oxygens, max_iter=50):
 
     origin = 0.5 * (Si1_coord + Si2_coord)
     centered = podal_O_coords - origin
@@ -51,17 +51,35 @@ def reorder_podal_oxygens(podal_O_coords, O1_coord, O2_coord, Si1_coord, Si2_coo
 
     if len(reordered1) > 2:
         if len(reordered2) > 2:
-            nm = numpy.argmin([numpy.linalg.norm(centered[i]-centered[j]) for i in reordered1 for j in reordered2])
-            n = nm//len(reordered2)
-            m = nm%len(reordered2)
+            nm = numpy.argmin([numpy.linalg.norm(centered[i] - centered[j]) for i in reordered1 for j in reordered2])
+            n, m = numpy.unravel_index(nm, [len(reordered1), len(reordered2)])
             reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
             reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
+        elif len(reordered2) > 0:
+            if len(chasis_oxygens) == 0:
+                nm = numpy.argmin([numpy.linalg.norm(centered[i] - centered[j]) for i in reordered1 for j in reordered2])
+                n, m = numpy.unravel_index(nm, [len(reordered1), len(reordered2)])
+                reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
+                reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
+            else:
+                n = numpy.argmin([numpy.linalg.norm(centered[i] - centered[reordered2[0]]) for i in reordered1])
+                reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
         else:
-            n = numpy.argmin([numpy.linalg.norm(centered[i]-centered[0]) for i in reordered1])
+            n = numpy.argmin([numpy.linalg.norm(centered[i] - (Si2_coord - origin)) for i in reordered1])
             reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
     elif len(reordered2) > 2:
-        m = numpy.argmin([numpy.linalg.norm(centered[0]-centered[j]) for j in reordered2])
-        reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
+        if len(reordered1) > 0:
+            if len(chasis_oxygens) == 0:
+                nm = numpy.argmin([numpy.linalg.norm(centered[i] - centered[j]) for i in reordered1 for j in reordered2])
+                n, m = numpy.unravel_index(nm, [len(reordered1), len(reordered2)])
+                reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
+                reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
+            else:
+                m = numpy.argmin([numpy.linalg.norm(centered[reordered1[-1]] - centered[j]) for j in reordered2])
+                reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
+        else:
+            m = numpy.argmin([numpy.linalg.norm((Si1_coord - origin) - centered[j]) for j in reordered2])
+            reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
     reordered = reordered1 + reordered2
 
     return reordered
@@ -72,19 +90,31 @@ def permute_podal_atoms(podal_coords, silanol_type='vicinal', right_hand_only=Tr
     permutes = []
 
     if silanols_type == 'vicinal':
-        permutes += [
-                [0, 1, 2, 3, 4, 5, 6, 7],
-                [2, 3, 0, 1, 6, 7, 4, 5],
-                ]
+        case0 = list(range(8))
+        case1 = [2, 3, 0, 1]
+        case1 = case1 + [i + 4 for i in case1]
+        permutes += [case0, case1]
         if not right_hand_only:
-            permutes += [
-                    [3, 2, 1, 0, 7, 6, 5, 4],
-                    [1, 0, 3, 2, 5, 4, 7, 6],
-                    ]
+            permutes += [list(reversed(case0)), list(reversed(case1))]
 
     elif silanols_type == 'nonvicinal':
-        permutes += [
-                ]
+        case0 = list(range(12))
+        nm = numpy.argsort([numpy.linalg.norm(podal_coords[i] - podal_coords[j]) for i in range(0, 3) for j in range(3, 6)])
+        n, m = numpy.unravel_index(nm[0], [3, 3])
+        case1_1 = [(j+1)%3+3 for j in range(m, m+3)]
+        case1_2 = [i%3 for i in range(n, n+3)]
+        case1 = case1_1 + [i + 3 for i in case1_2] + [i + 6 for i in case1_1] + [i + 9 for i in case1_2]
+        n, m = numpy.unravel_index(nm[1], [3, 3])
+        case2_1 = [(i+1)%3 for i in range(n, n+3)]
+        case2_2 = [j%3+3 for j in range(m, m+3)]
+        case2 = case2_1 + [i + 3 for i in case2_2] + [i + 6 for i in case2_1] + [i + 9 for i in case2_2]
+        n, m = numpy.unravel_index(nm[1], [3, 3])
+        case3_2 = [(j+1)%3+3 for j in range(m, m+3)]
+        case3_1 = [i%3 for i in range(n, n+3)]
+        case3 = case3_1 + [i + 3 for i in case3_2] + [i + 6 for i in case3_1] + [i + 9 for i in case3_2]
+        permutes += [case0, case1, case2, case3]
+        if not right_hand_only:
+            permutes += [list(reversed(case0)), list(reversed(case1)), list(reversed(case2)), list(reversed(case3))]
 
     return permutes
 
