@@ -396,7 +396,7 @@ class Phillips():
 
     def save_clusters(self, file_path, file_type, labels=None, clusters=None):
         if labels is None:
-            labels = ['L_butyl', 'L_butyl_R_ethylene', 'LR_transition_state', 'R_hexyl', 'R_butyl', 'R_butyl_L_ethylene', 'RL_transition_state', 'L_hexyl']
+            labels = ['L-butyl', 'L-butyl-R-ethylene', 'LR-transition-state', 'R-hexyl', 'R-butyl', 'R-butyl-L-ethylene', 'RL-transition-state', 'L-hexyl']
         if clusters is None:
             clusters = [self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_state_cluster, self.R_hexyl_cluster, self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_state_cluster, self.L_hexyl_cluster]
         for label, cluster in zip(labels, clusters):
