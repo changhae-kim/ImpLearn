@@ -75,8 +75,8 @@ class Kernel():
         if self.X_norm:
             X = self.X_scaler.transform(X)
         dX = X[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
-        d2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
-        softmax = numpy.exp( -d2 - logsumexp(-d2, axis=1).reshape((-1, 1)) )
+        dX2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
+        softmax = numpy.exp( -dX2 - logsumexp(-dX2, axis=1).reshape((-1, 1)) )
         y = numpy.einsum('ij,j->i', softmax, self.y_train)
         if self.y_norm:
             y = self.y_scaler.inverse_transform(y.reshape(-1, 1)).reshape((-1, ))
