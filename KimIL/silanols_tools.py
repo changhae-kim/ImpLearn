@@ -87,23 +87,19 @@ def reorder_podal_oxygens(O_coords, O1_coord, O2_coord, Si1_coord, Si2_coord, O3
 
     return reordered
 
-def permute_podal_atoms(silanol_type='vicinal', podal_coords=None, right_hand_only=True):
+def permute_podal_atoms(pair_type, podal_coords=None, right_hand_only=True):
 
     permutes = []
 
-    if silanols_type == 'vicinal':
+    if pair_type == 'vicinal':
         case0 = list(range(8))
         case1 = [2, 3, 0, 1]
         case1 = case1 + [i + 4 for i in case1]
         permutes += [case0, case1]
         if not right_hand_only:
-            case2 = list(reversed(case0[:4]))
-            case2 = case2 + [i + 4 for i in case2]
-            case3 = list(reversed(case1[:4]))
-            case3 = case3 + [i + 4 for i in case3]
-            permutes += [list(reversed(case2)), list(reversed(case3))]
+            permutes += [list(reversed(case[:4])) + list(reversed(case[4:])) for case in permutes]
 
-    elif silanols_type == 'nonvicinal':
+    elif pair_type == 'nonvicinal':
         case0 = list(range(12))
         nm = numpy.argsort([numpy.linalg.norm(podal_coords[i] - podal_coords[j]) for i in range(0, 3) for j in range(3, 6)])
         n, m = numpy.unravel_index(nm[0], [3, 3])
@@ -120,7 +116,7 @@ def permute_podal_atoms(silanol_type='vicinal', podal_coords=None, right_hand_on
         case3 = case3a + [i + 3 for i in case3b] + [i + 6 for i in case3a] + [i + 9 for i in case3b]
         permutes += [case0, case1, case2, case3]
         if not right_hand_only:
-            permutes += [list(reversed(case0)), list(reversed(case1)), list(reversed(case2)), list(reversed(case3))]
+            permutes += [list(reversed(case[:6])) + list(reversed(case[6:])) for case in permutes]
 
     return permutes
 
