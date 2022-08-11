@@ -140,7 +140,7 @@ class Gaussian():
         coords = cluster.get_positions()
 
         header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq Temp={temp:f} Pressure={pressure:f}
+#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
 
  {label:s}
 
@@ -198,7 +198,7 @@ class Gaussian():
         coords = cluster.get_positions()
 
         header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:f} Pressure={pressure:f}
+#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
 
  {label:s}
 
