@@ -3,7 +3,7 @@ import numpy
 from ase import Atoms
 
 
-def calculate_k(T, G_r, G_t):
+def calc_k(T, G_r, G_t):
     kB = 1.380649e-23 / 4.3597447222071e-18
     h = 6.62607015e-34 / 4.3597447222071e-18
     T = numpy.array(T)
@@ -11,7 +11,7 @@ def calculate_k(T, G_r, G_t):
     G_t = numpy.array(G_t)
     return (kB * T / h) * numpy.exp(-(G_t - G_r) / (kB * T))
 
-def calculate_logk(T, G_r, G_t):
+def calc_log_k(T, G_r, G_t):
     kB = 1.380649e-23 / 4.3597447222071e-18
     h = 6.62607015e-34 / 4.3597447222071e-18
     T = numpy.array(T)
@@ -19,14 +19,14 @@ def calculate_logk(T, G_r, G_t):
     G_t = numpy.array(G_t)
     return numpy.log(kB * T / h) - (G_t - G_r) / (kB * T)
 
-def calculate_K(T, G_r, G_p):
+def calc_K(T, G_r, G_p):
     kB = 1.380649e-23 / 4.3597447222071e-18
     T = numpy.array(T)
     G_r = numpy.array(G_r)
     G_p = numpy.array(G_p)
     return numpy.exp(-(G_p - G_r) / (kB * T))
 
-def calculate_logK(T, G_r, G_p):
+def calc_log_K(T, G_r, G_p):
     kB = 1.380649e-23 / 4.3597447222071e-18
     T = numpy.array(T)
     G_r = numpy.array(G_r)
