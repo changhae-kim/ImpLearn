@@ -361,11 +361,11 @@ if __name__ == '__main__':
 
 
     gauss = Gaussian(
-            ['tests/A_0000_L_butyl.xyz', 'tests/A_0000_R_butyl.xyz'],
-            ['tests/A_0000_L_butyl_R_ethylene.xyz', 'tests/A_0000_R_butyl_L_ethylene.xyz'],
-            ['tests/A_0000_R_hexyl.xyz', 'tests/A_0000_L_hexyl.xyz'],
-            ['tests/A_0000_LR_transition_state.xyz', 'tests/A_0000_RL_transition_state.xyz'],
-            'A_0000')
+            ['tests/A_0001_L-butyl.xyz', 'tests/A_0001_R-butyl.xyz'],
+            ['tests/A_0001_L-butyl-R-ethylene.xyz', 'tests/A_0001_R-butyl-L-ethylene.xyz'],
+            ['tests/A_0001_R-hexyl.xyz', 'tests/A_0001_L-hexyl.xyz'],
+            ['tests/A_0001_LR-transition-state.xyz', 'tests/A_0001_RL-transition-state.xyz'],
+            'A_0001')
     gauss.setup()
     gauss.run()
     gibbs_energies = gauss.get_gibbs_energies()
