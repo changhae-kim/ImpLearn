@@ -83,17 +83,17 @@ class Phillips():
 
         n, m = peripheral_oxygens
         p, q = chasis_silicons
-        xaxis = coords[m] - coords[n]
-        xaxis = xaxis / numpy.linalg.norm(xaxis)
-        zaxis = coords[n] + coords[m] - coords[p] - coords[q]
-        zaxis = zaxis - numpy.inner(zaxis, xaxis) * xaxis
-        zaxis = zaxis / numpy.linalg.norm(zaxis)
-        yaxis = numpy.cross(zaxis, xaxis)
-        axes = numpy.array([xaxis, yaxis, zaxis])
+        axes = numpy.empty((3, 3))
+        axes[0] = coords[p] - coords[q]
+        axes[0] = axes[0] / numpy.linalg.norm(axes[0])
+        axes[2] = coords[n] + coords[m] - coords[p] - coords[q]
+        axes[2] = axes[2] - numpy.inner(axes[2], axes[0]) * axes[0]
+        axes[2] = axes[2] / numpy.linalg.norm(axes[2])
+        axes[1] = numpy.cross(axes[2], axes[0])
 
         return axes
 
-    def attach_chromium(self, cluster, peripheral_oxygens=None, bond_cutoffs=None, bond_lengths=None, axes=None):
+    def attach_chromium(self, cluster, peripheral_oxygens=None, bond_cutoffs=None, bond_lengths=None, axes=None, max_iter=50):
 
         if peripheral_oxygens is None:
             peripheral_oxygens = self.peripheral_oxygens
@@ -109,18 +109,85 @@ class Phillips():
         bonds = neighbor_list('ij', cluster, bond_cutoffs)
 
         peripheral_hydrogens = []
+        chasis_silicons = []
         for i in peripheral_oxygens:
             i_neighbors = bonds[1][bonds[0] == i]
             for j in i_neighbors:
                 if atoms[j] == 'H':
                     peripheral_hydrogens.append(j)
+                elif atoms[j] == 'Si':
+                    chasis_silicons.append(j)
 
         n, m = peripheral_oxygens
-        OO_distance = cluster.get_distance(n, m)
+        p, q = chasis_silicons
+        r, s = peripheral_hydrogens
+        SiO1_bond_length = cluster.get_distance(n, p)
+        SiO2_bond_length = cluster.get_distance(m, q)
+        O1_coord = coords[p] + axes[2] * SiO1_bond_length
+        O2_coord = coords[q] + axes[2] * SiO2_bond_length
+
+        need_new_axes = False
+        status = -1
+        for i in range(max_iter):
+            if status == 0:
+                continue
+            else:
+                status = 0
+                for j, (X, coord) in enumerate(zip(atoms, coords)):
+                    if j not in [n, p, r]:
+                        if X == 'Si':
+                            OX_bond_cutoff = bond_cutoffs[('Si', 'O')]
+                        elif X == 'O':
+                            OX_bond_cutoff = bond_cutoffs[('O', 'O')]
+                        elif X == 'H':
+                            OX_bond_cutoff = bond_cutoffs[('O', 'H')]
+                        OX_vec = O1_coord - coord
+                        OX_dist = numpy.linalg.norm(OX_vec)
+                        if OX_dist < OX_bond_cutoff:
+                            O1_coord = O1_coord + OX_vec * OX_bond_cutoff / OX_dist
+                            SiO_vec = O1_coord - coords[p]
+                            SiO_dist = numpy.linalg.norm(SiO_vec)
+                            O1_coord = coords[p] + SiO_vec * SiO1_bond_length / SiO_dist
+                            need_new_axes = True
+                            status = -1
+                            break
+        status = -1
+        for i in range(max_iter):
+            if status == 0:
+                continue
+            else:
+                status = 0
+                for j, (X, coord) in enumerate(zip(atoms, coords)):
+                    if j not in [m, q, s]:
+                        if X == 'Si':
+                            OX_bond_cutoff = bond_cutoffs[('Si', 'O')]
+                        elif X == 'O':
+                            OX_bond_cutoff = bond_cutoffs[('O', 'O')]
+                        elif X == 'H':
+                            OX_bond_cutoff = bond_cutoffs[('O', 'H')]
+                        OX_vec = O2_coord - coord
+                        OX_dist = numpy.linalg.norm(OX_vec)
+                        if OX_dist < OX_bond_cutoff:
+                            O2_coord = O2_coord + OX_vec * OX_bond_cutoff / OX_dist
+                            SiO_vec = O2_coord - coords[q]
+                            SiO_dist = numpy.linalg.norm(SiO_vec)
+                            O2_coord = coords[q] + SiO_vec * SiO2_bond_length / SiO_dist
+                            need_new_axes = True
+                            status = -1
+                            break
+
+        if need_new_axes:
+            axes[2] = O1_coord + O2_coord - coords[p] - coords[q]
+            axes[2] = axes[2] - numpy.inner(axes[2], axes[0]) * axes[0]
+            axes[2] = axes[2] / numpy.linalg.norm(axes[2])
+            axes[1] = numpy.cross(axes[2], axes[0])
+            self.axes = axes
+
+        OO_distance = numpy.linalg.norm(O1_coord - O2_coord)
         if 0.5 * OO_distance < bond_lengths[('Cr', 'O')]:
-            Cr_coord = 0.5 * (coords[n] + coords[m]) + axes[2] * ((bond_lengths[('Cr', 'O')])**2.0 - (0.5 * OO_distance)**2.0)**0.5
+            Cr_coord = 0.5 * (O1_coord + O2_coord) + axes[2] * ((bond_lengths[('Cr', 'O')])**2.0 - (0.5 * OO_distance)**2.0)**0.5
         else:
-            Cr_coord = 0.5 * (coords[n] + coords[m])
+            Cr_coord = 0.5 * (O1_coord + O2_coord)
 
         chromium_atoms = []
         chromium_coords = []
@@ -129,6 +196,13 @@ class Phillips():
                 if i == peripheral_hydrogens[0]:
                     chromium_atoms.append('Cr')
                     chromium_coords.append(Cr_coord)
+            elif i in peripheral_oxygens:
+                if i == n:
+                    chromium_atoms.append('O')
+                    chromium_coords.append(O1_coord)
+                elif i == m:
+                    chromium_atoms.append('O')
+                    chromium_coords.append(O2_coord)
             else:
                 chromium_atoms.append(X)
                 chromium_coords.append(coord)
