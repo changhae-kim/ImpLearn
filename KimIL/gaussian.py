@@ -15,8 +15,8 @@ class Gaussian():
             temp=373.15, pressure=1.0,
             n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
-            frozen_atoms=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-            scan_params='B 19 20 S 10 0.1',
+            frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13],
+            scan_params='B 16 17 S 10 0.1',
             scan_reverse=True,
             transition_state_criteria={(0, 17): (1.9, 2.4), (0, 19): (1.9, 2.4), (18, 19): (1.9, 2.4)}
             ):
