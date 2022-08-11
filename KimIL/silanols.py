@@ -339,6 +339,6 @@ if __name__ == '__main__':
     print(clusters.viable_OH_pairs)
     clusters.analyze_bonds()
     clusters.analyze_distances('A_d{:s}{:s}.png')
-    clusters.save_clusters('A_{:03d}_{:03d}.xyz', 'xyz')
+    clusters.save_clusters('A_{:02d}{:02d}.xyz', 'xyz')
 
 
