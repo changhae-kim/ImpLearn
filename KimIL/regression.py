@@ -61,8 +61,8 @@ class Kernel():
                 self.y_scaler = MinMaxScaler()
             elif self.y_norm in ['standard', 'Standard']:
                 self.tearget_scaler = StandardScaler()
-            self.y_scaler.fit(self.y_train.reshape((-1, 1)))
-            self.y_train = self.y_scaler.transform(self.y_train.reshape((-1, 1))).reshape((-1, ))
+            self.y_scaler.fit(self.y_train[:, numpy.newaxis])
+            self.y_train = self.y_scaler.transform(self.y_train[:, numpy.newaxis]).ravel()
 
         model = KimMLKR(regularizer=self.regularizer, alpha=self.alpha, random_state=self.random_state)
         model.fit(self.X_train, self.y_train)
@@ -76,10 +76,10 @@ class Kernel():
             X = self.X_scaler.transform(X)
         dX = X[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
         dX2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
-        softmax = numpy.exp( -dX2 - logsumexp(-dX2, axis=1).reshape((-1, 1)) )
+        softmax = numpy.exp( -dX2 - logsumexp(-dX2, axis=1)[:, numpy.newaxis] )
         y = numpy.einsum('ij,j->i', softmax, self.y_train)
         if self.y_norm:
-            y = self.y_scaler.inverse_transform(y.reshape(-1, 1)).reshape((-1, ))
+            y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
         return y
 
 
