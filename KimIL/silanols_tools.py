@@ -87,7 +87,6 @@ def reorder_podal_oxygens(O_coords, O1_coord, O2_coord, Si1_coord, Si2_coord, O3
 
     return reordered
 
-
 def permute_podal_atoms(silanol_type='vicinal', podal_coords=None, right_hand_only=True):
 
     permutes = []
@@ -108,17 +107,17 @@ def permute_podal_atoms(silanol_type='vicinal', podal_coords=None, right_hand_on
         case0 = list(range(12))
         nm = numpy.argsort([numpy.linalg.norm(podal_coords[i] - podal_coords[j]) for i in range(0, 3) for j in range(3, 6)])
         n, m = numpy.unravel_index(nm[0], [3, 3])
-        case1_1 = [(j+1)%3+3 for j in range(m, m+3)]
-        case1_2 = [i%3 for i in range(n, n+3)]
-        case1 = case1_1 + [i + 3 for i in case1_2] + [i + 6 for i in case1_1] + [i + 9 for i in case1_2]
+        case1a = [(j+1)%3+3 for j in range(m, m+3)]
+        case1b = [i%3 for i in range(n, n+3)]
+        case1 = case1a + [i + 3 for i in case1b] + [i + 6 for i in case1a] + [i + 9 for i in case1b]
         n, m = numpy.unravel_index(nm[1], [3, 3])
-        case2_1 = [(i+1)%3 for i in range(n, n+3)]
-        case2_2 = [j%3+3 for j in range(m, m+3)]
-        case2 = case2_1 + [i + 3 for i in case2_2] + [i + 6 for i in case2_1] + [i + 9 for i in case2_2]
+        case2a = [(i+1)%3 for i in range(n, n+3)]
+        case2b = [j%3+3 for j in range(m, m+3)]
+        case2 = case2a + [i + 3 for i in case2b] + [i + 6 for i in case2a] + [i + 9 for i in case2b]
         n, m = numpy.unravel_index(nm[1], [3, 3])
-        case3_2 = [(j+1)%3+3 for j in range(m, m+3)]
-        case3_1 = [i%3 for i in range(n, n+3)]
-        case3 = case3_1 + [i + 3 for i in case3_2] + [i + 6 for i in case3_1] + [i + 9 for i in case3_2]
+        case3a = [(j+1)%3+3 for j in range(m, m+3)]
+        case3b = [i%3 for i in range(n, n+3)]
+        case3 = case3a + [i + 3 for i in case3b] + [i + 6 for i in case3a] + [i + 9 for i in case3b]
         permutes += [case0, case1, case2, case3]
         if not right_hand_only:
             permutes += [list(reversed(case0)), list(reversed(case1)), list(reversed(case2)), list(reversed(case3))]
