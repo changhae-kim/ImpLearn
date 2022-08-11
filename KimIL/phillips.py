@@ -144,7 +144,7 @@ class Phillips():
                         OX_vec = O1_coord - coord
                         OX_dist = numpy.linalg.norm(OX_vec)
                         if OX_dist < OX_bond_cutoff:
-                            O1_coord = O1_coord + OX_vec * OX_bond_cutoff / OX_dist
+                            O1_coord = O1_coord + OX_vec * 1.05 * OX_bond_cutoff / OX_dist
                             SiO_vec = O1_coord - coords[p]
                             SiO_dist = numpy.linalg.norm(SiO_vec)
                             O1_coord = coords[p] + SiO_vec * SiO1_bond_length / SiO_dist
@@ -168,7 +168,7 @@ class Phillips():
                         OX_vec = O2_coord - coord
                         OX_dist = numpy.linalg.norm(OX_vec)
                         if OX_dist < OX_bond_cutoff:
-                            O2_coord = O2_coord + OX_vec * OX_bond_cutoff / OX_dist
+                            O2_coord = O2_coord + OX_vec * 1.05 * OX_bond_cutoff / OX_dist
                             SiO_vec = O2_coord - coords[q]
                             SiO_dist = numpy.linalg.norm(SiO_vec)
                             O2_coord = coords[q] + SiO_vec * SiO2_bond_length / SiO_dist
