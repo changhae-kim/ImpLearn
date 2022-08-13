@@ -267,7 +267,7 @@ class Gaussian():
 
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            return energies[0], clusters[0]
+            return energies[-1], clusters[-1]
 
         return
 
@@ -292,7 +292,7 @@ class Gaussian():
         if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
             if check_geometry(clusters[-1], self.transition_state_criteria):
-                return energies[0], clusters[0]
+                return energies[-1], clusters[-1]
 
         return
 
