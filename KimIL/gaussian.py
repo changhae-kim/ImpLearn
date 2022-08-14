@@ -234,8 +234,6 @@ class Gaussian():
                     optimized_energy, optimized_cluster = output
                     self.catalyst_energies.append(optimized_energy)
                     self.catalyst_clusters.append(optimized_cluster)
-                else:
-                    print(label)
 
         if self.reactant_energies == []:
             for label in self.reactant_optimizations:
