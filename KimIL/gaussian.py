@@ -18,7 +18,7 @@ class Gaussian():
             frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13],
             scan_params='B 16 17 S 10 0.1',
             scan_reverse=True,
-            transition_state_criteria={(0, 17): (1.9, 2.4), (0, 19): (1.9, 2.4), (18, 19): (1.9, 2.4)}
+            transition_state_criteria={(0, 14): (1.9, 2.4), (0, 16): (1.9, 2.4), (15, 16): (1.9, 2.4)}
             ):
 
         self.catalysts = [self.load_cluster(file_path, file_type) for file_path in catalyst_file_paths]
@@ -229,33 +229,53 @@ class Gaussian():
 
         if self.catalyst_energies == []:
             for label in self.catalyst_optimizations:
-                optimized_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
-                self.catalyst_energies.append(optimized_energy)
-                self.catalyst_clusters.append(optimized_cluster)
+                output = self.run_geometry_optimization(label, dry_run)
+                if output is not None:
+                    optimized_energy, optimized_cluster = output
+                    self.catalyst_energies.append(optimized_energy)
+                    self.catalyst_clusters.append(optimized_cluster)
+                else:
+                    print(label)
 
         if self.reactant_energies == []:
             for label in self.reactant_optimizations:
-                optimized_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
-                self.reactant_energies.append(optimized_energy)
-                self.reactant_clusters.append(optimized_cluster)
+                output = = self.run_geometry_optimization(label, dry_run)
+                if output is not None:
+                    optimized_energy, optimized_cluster = output
+                    self.reactant_energies.append(optimized_energy)
+                    self.reactant_clusters.append(optimized_cluster)
+                else:
+                    print(label)
 
         if self.product_energies == []:
             for label in self.product_optimizations:
-                optimized_energy, optimized_cluster = self.run_geometry_optimization(label, dry_run)
-                self.product_energies.append(optimized_energy)
-                self.product_clusters.append(optimized_cluster)
+                output self.run_geometry_optimization(label, dry_run)
+                if output is not None:
+                    optimized_energy, optimized_cluster = output
+                    self.product_energies.append(optimized_energy)
+                    self.product_clusters.append(optimized_cluster)
+                else:
+                    print(label)
 
         if self.scan_energies == []:
             for label in self.scans:
-                scan_energies, scan_clusters = self.run_scan(label, dry_run)
-                self.scan_energies.append(scan_energies)
-                self.scan_clusters.append(scan_clusters)
+                output = self.run_scan(label, dry_run)
+                if output is not None:
+                    scan_energies, scan_clusters = output
+                    self.scan_energies.append(scan_energies)
+                    self.scan_clusters.append(scan_clusters)
+                else:
+                    print(label)
 
         if self.transition_state_energies == []:
             for label in self.transition_state_optimizations:
-                optimized_energy, optimized_cluster = self.run_transition_state_optimization(label, dry_run)
-                self.transition_state_energies.append(optimized_energy)
-                self.transition_state_clusters.append(optimized_cluster)
+                output = self.run_transition_state_optimization(label, dry_run)
+                if output is not None:
+                    optimized_energy, optimized_cluster = output
+                    self.transition_state_energies.append(optimized_energy)
+                    self.transition_state_clusters.append(optimized_cluster)
+                else:
+                    print(label)
 
         return
 
