@@ -239,7 +239,7 @@ class Gaussian():
 
         if self.reactant_energies == []:
             for label in self.reactant_optimizations:
-                output = = self.run_geometry_optimization(label, dry_run)
+                output = self.run_geometry_optimization(label, dry_run)
                 if output is not None:
                     optimized_energy, optimized_cluster = output
                     self.reactant_energies.append(optimized_energy)
@@ -249,7 +249,7 @@ class Gaussian():
 
         if self.product_energies == []:
             for label in self.product_optimizations:
-                output self.run_geometry_optimization(label, dry_run)
+                output = self.run_geometry_optimization(label, dry_run)
                 if output is not None:
                     optimized_energy, optimized_cluster = output
                     self.product_energies.append(optimized_energy)
