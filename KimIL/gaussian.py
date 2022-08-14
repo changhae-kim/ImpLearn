@@ -244,8 +244,6 @@ class Gaussian():
                     optimized_energy, optimized_cluster = output
                     self.reactant_energies.append(optimized_energy)
                     self.reactant_clusters.append(optimized_cluster)
-                else:
-                    print(label)
 
         if self.product_energies == []:
             for label in self.product_optimizations:
@@ -254,8 +252,6 @@ class Gaussian():
                     optimized_energy, optimized_cluster = output
                     self.product_energies.append(optimized_energy)
                     self.product_clusters.append(optimized_cluster)
-                else:
-                    print(label)
 
         if self.scan_energies == []:
             for label in self.scans:
@@ -264,8 +260,6 @@ class Gaussian():
                     scan_energies, scan_clusters = output
                     self.scan_energies.append(scan_energies)
                     self.scan_clusters.append(scan_clusters)
-                else:
-                    print(label)
 
         if self.transition_state_energies == []:
             for label in self.transition_state_optimizations:
@@ -274,8 +268,6 @@ class Gaussian():
                     optimized_energy, optimized_cluster = output
                     self.transition_state_energies.append(optimized_energy)
                     self.transition_state_clusters.append(optimized_cluster)
-                else:
-                    print(label)
 
         return
 
@@ -285,11 +277,16 @@ class Gaussian():
             if not dry_run:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
-            energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            return energies[-1], clusters[-1]
-
-        return
+        if os.path.exists('{:s}.log'.format(label)):
+            if check_normal_termination('{:s}.log'.format(label)):
+                energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+                return energies[-1], clusters[-1]
+            else:
+                print(label, 'Error termination')
+                return
+        else:
+            print(label, 'No output')
+            return
 
     def run_scan(self, label, dry_run=False):
 
@@ -300,8 +297,9 @@ class Gaussian():
         if os.path.exists('{:s}.log'.format(label)):
             energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
             return energies, clusters
-
-        return
+        else:
+            print(label, 'No output')
+            return
 
     def run_transition_state_optimization(self, label, dry_run=False):
 
@@ -309,10 +307,20 @@ class Gaussian():
             if not dry_run:
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
-        if os.path.exists('{:s}.log'.format(label)) and check_normal_termination('{:s}.log'.format(label)):
-            energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
-            if check_geometry(clusters[-1], self.transition_state_criteria):
-                return energies[-1], clusters[-1]
+        if os.path.exists('{:s}.log'.format(label)):
+            if check_normal_termination('{:s}.log'.format(label)):
+                energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+                if check_geometry(clusters[-1], self.transition_state_criteria):
+                    return energies[-1], clusters[-1]
+                else:
+                    print(label, 'Wrong transition state')
+                    return
+            else:
+                print(label, 'Error termination')
+                return
+        else:
+            print(label, 'No output')
+            return
 
         return
 
