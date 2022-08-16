@@ -48,14 +48,14 @@ class Phillips():
 
         self.axes = self.define_axes(self.cluster)
         self.chromium_cluster = self.attach_chromium(self.cluster)
-        self.L_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, rotate_2=False)
-        self.L_butyl_R_ethylene_cluster = self.attach_ethylene(self.L_butyl_cluster, point_y=False)
+        self.L_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, right_angle=False, rotate_2=False)
+        self.L_butyl_R_ethylene_cluster = self.attach_ethylene(self.L_butyl_cluster, point_y=False, right_angle=False)
         self.LR_transition_state_cluster = self.attach_transition_state(self.chromium_cluster, self.alkyl_lengths[1], point_y=False)
-        self.R_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=False, rotate_2=True)
-        self.R_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=False, rotate_2=False)
-        self.R_butyl_L_ethylene_cluster = self.attach_ethylene(self.R_butyl_cluster, point_y=True)
+        self.R_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=False, right_angle=False, rotate_2=True)
+        self.R_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=False, right_angle=False, rotate_2=False)
+        self.R_butyl_L_ethylene_cluster = self.attach_ethylene(self.R_butyl_cluster, point_y=True, right_angle=False)
         self.RL_transition_state_cluster = self.attach_transition_state(self.chromium_cluster, self.alkyl_lengths[1], point_y=True)
-        self.L_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=True, rotate_2=True)
+        self.L_hexyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[1], point_y=True, right_angle=False, rotate_2=True)
 
         return
 
@@ -211,7 +211,7 @@ class Phillips():
 
         return chromium_cluster
 
-    def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None, point_y=True, rotate_2=False):
+    def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None, point_y=True, right_angle=False, rotate_2=False):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -232,15 +232,27 @@ class Phillips():
                 Cr_coord = coord
 
         if point_y:
-            tilts = [
-                    axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
-                    axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) + axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
-                    ]
+            if right_angle:
+                tilts = [
+                        + axes[1],
+                        + axes[1] * numpy.cos(numpy.pi*(180.0-109.5)/180.0) + axes[2] * numpy.sin(numpy.pi*(180.0-109.5)/180.0),
+                        ]
+            else:
+                tilts = [
+                        axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
+                        axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) + axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0),
+                        ]
         else:
-            tilts = [
-                    axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
-                    axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0)
-                    ]
+            if right_angle:
+                tilts = [
+                        - axes[1],
+                        - axes[1] * numpy.cos(numpy.pi*(180.0-109.5)/180.0) + axes[2] * numpy.sin(numpy.pi*(180.0-109.5)/180.0),
+                        ]
+            else:
+                tilts = [
+                        axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
+                        axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0),
+                        ]
 
         C_coords = [Cr_coord + tilts[0] * bond_lengths[('Cr', 'C')]]
         for i in range(1, alkyl_length):
@@ -287,7 +299,7 @@ class Phillips():
 
         return alkyl_cluster
 
-    def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None, point_y=False):
+    def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None, point_y=False, right_angle=False):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -309,17 +321,18 @@ class Phillips():
                 Cr_index = i
                 Cr_coord = coord
 
-        #angle = numpy.arctan(0.5 * ethylene_bond_lengths[('C', 'C')] / ethylene_bond_lengths[('Cr', 'C')])
         if point_y:
-            tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
-            tilt1 = -axes[0]
-            #tilt1 = tilt0 * numpy.cos(angle) + axes[0] * numpy.sin(angle)
-            #tilt2 = tilt0 * numpy.sin(angle) - axes[0] * numpy.cos(angle)
+            if right_angle:
+                tilt0 = + axes[1]
+            else:
+                tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
+            tilt1 = - axes[0]
         else:
-            tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
-            tilt1 = +axes[0]
-            #tilt1 = tilt0 * numpy.cos(angle) - axes[0] * numpy.sin(angle)
-            #tilt2 = tilt0 * numpy.sin(angle) + axes[0] * numpy.cos(angle)
+            if right_angle:
+                tilt0 = - axes[1]
+            else:
+                tilt0 = axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0)
+            tilt1 = + axes[0]
         C1_coord = Cr_coord + tilt0 * ethylene_bond_lengths[('Cr', 'C')]
         C2_coord = C1_coord + tilt1 * ethylene_bond_lengths[('C', 'C')]
         C_coords = [C1_coord, C2_coord]
