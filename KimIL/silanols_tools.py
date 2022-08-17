@@ -105,15 +105,15 @@ def permute_podal_atoms(pair_type, podal_coords=None, right_hand_only=True):
         n, m = numpy.unravel_index(nm[0], [3, 3])
         permute1a = [(j+1)%3+3 for j in range(m, m+3)]
         permute1b = [i%3 for i in range(n, n+3)]
-        permute1 = permute1a + [i + 3 for i in permute1b] + [i + 6 for i in permute1a] + [i + 9 for i in permute1b]
+        permute1 = permute1a + permute1b + [i + 6 for i in permute1a + permute1b]
         n, m = numpy.unravel_index(nm[1], [3, 3])
         permute2a = [(i+1)%3 for i in range(n, n+3)]
         permute2b = [j%3+3 for j in range(m, m+3)]
-        permute2 = permute2a + [i + 3 for i in permute2b] + [i + 6 for i in permute2a] + [i + 9 for i in permute2b]
+        permute2 = permute2a + permute2b + [i + 6 for i in permute2a + permute2b]
         n, m = numpy.unravel_index(nm[1], [3, 3])
         permute3a = [(j+1)%3+3 for j in range(m, m+3)]
         permute3b = [i%3 for i in range(n, n+3)]
-        permute3 = permute3a + [i + 3 for i in permute3b] + [i + 6 for i in permute3a] + [i + 9 for i in permute3b]
+        permute3 = permute3a + permute3b + [i + 6 for i in permute3a + permute3b]
         permutes += [permute0, permute1, permute2, permute3]
         if not right_hand_only:
             permutes += [list(reversed(permute[:6])) + list(reversed(permute[6:])) for permute in permutes]
