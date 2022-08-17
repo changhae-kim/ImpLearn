@@ -149,10 +149,10 @@ class Gaussian():
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
-                frozen = -1
+                atom_type = -1
             else:
-                frozen = 0
-            body += '{X:s} {frozen:d} {x:f} {y:f} {z:f}\n'.format(X=X, frozen=frozen, x=coord[0], y=coord[1], z=coord[2])
+                atom_type = 0
+            body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
         if self.basis in ['gen', 'Gen', 'GEN']:
             footer += self.gen_basis + '\n\n'
@@ -179,10 +179,10 @@ class Gaussian():
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
-                frozen = -1
+                atom_type = -1
             else:
-                frozen = 0
-            body += '{X:s} {frozen:d} {x:f} {y:f} {z:f}\n'.format(X=X, frozen=frozen, x=coord[0], y=coord[1], z=coord[2])
+                atom_type = 0
+            body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n{:s}\n\n'.format(self.scan_params)
 
         if not os.path.exists('{:s}.com'.format(label)):
@@ -207,10 +207,10 @@ class Gaussian():
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms:
-                frozen = -1
+                atom_type = -1
             else:
-                frozen = 0
-            body += '{X:s} {frozen:d} {x:f} {y:f} {z:f}\n'.format(X=X, frozen=frozen, x=coord[0], y=coord[1], z=coord[2])
+                atom_type = 0
+            body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
         if self.basis in ['gen', 'Gen', 'GEN']:
             footer += self.gen_basis + '\n\n'
