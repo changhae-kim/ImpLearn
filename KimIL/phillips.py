@@ -240,7 +240,7 @@ class Phillips():
         return chromium_cluster
 
     def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None,
-            point_y=True, rotate_2=False, relax=True, alkyl_radius=None, max_iter=50):
+            point_y=True, rotate_2=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -284,24 +284,55 @@ class Phillips():
 
         if rotate_2:
             for i in range(2, alkyl_length):
-                C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], 180.0)
+                C_coords[i] = C_coords[1] + rotate_vector(C_coords[i] - C_coords[1], -tilts[1], 180.0)
             for i in range(2, 2*alkyl_length+1):
-                H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], 180.0)
+                H_coords[i] = C_coords[1] + rotate_vector(H_coords[i] - C_coords[1], -tilts[1], 180.0)
 
-        if relax:
-
+        if pucker > 0:
+            n = bonds[1][bonds[0] == o][0]
+            coords[o] = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], 30.0)
+            for i in range(alkyl_length):
+                C_coords[i] = coords[n] + rotate_vector(C_coords[i] - coords[n], -axes[0], 30.0)
+            for i in range(2*alkyl_length+1):
+                H_coords[i] = coords[n] + rotate_vector(H_coords[i] - coords[n], -axes[0], 30.0)
             if 'C' in atoms:
-
                 c = len(atoms)
                 for i, X in enumerate(atoms):
                     if X == 'C':
                         c = i
                         break
-                support = [j for j in range(0, c) if j != o]
-                ethylene = [j for j in range(c, len(atoms))]
+                ethylene = [i for i in range(c, len(atoms))]
+                for i in ethylene:
+                    coords[i] = coords[n] + rotate_vector(coords[i] - coords[n], -axes[0], 30.0)
+
+        elif pucker < 0:
+            n = bonds[1][bonds[0] == o][0]
+            coords[o] = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], 30.0)
+            for i in range(alkyl_length):
+                C_coords[i] = coords[n] + rotate_vector(C_coords[i] - coords[n], +axes[0], 30.0)
+            for i in range(2*alkyl_length+1):
+                H_coords[i] = coords[n] + rotate_vector(H_coords[i] - coords[n], +axes[0], 30.0)
+            if 'C' in atoms:
+                c = len(atoms)
+                for i, X in enumerate(atoms):
+                    if X == 'C':
+                        c = i
+                        break
+                ethylene = [i for i in range(c, len(atoms))]
+                for i in ethylene:
+                    coords[i] = coords[n] + rotate_vector(coords[i] - coords[n], +axes[0], 30.0)
+
+        if relax:
+            if 'C' in atoms:
+                c = len(atoms)
+                for i, X in enumerate(atoms):
+                    if X == 'C':
+                        c = i
+                        break
+                support = [i for i in range(0, c) if i != o]
+                ethylene = [i for i in range(c, len(atoms))]
                 alkyl_radii = numpy.full((len(support)+len(ethylene), 3*alkyl_length+1), alkyl_radius)
                 ethylene_radii = numpy.full((len(support)+3*alkyl_length+1, len(ethylene)), alkyl_radius)
-
                 status = -1
                 for i in range(max_iter):
                     if status == 0:
@@ -319,10 +350,8 @@ class Phillips():
                             status = -1
 
             else:
-
                 nonneighbors = [j for j, X in enumerate(atoms) if j != o]
                 alkyl_radii = numpy.full((len(nonneighbors), 3*alkyl_length+1), alkyl_radius)
-
                 status = -1
                 for i in range(max_iter):
                     if status == 0:
@@ -335,24 +364,24 @@ class Phillips():
                             H_coords = new_coords[alkyl_length:]
                             status = -1
 
-        n = len(atoms)
+        c = len(atoms)
         alkyl_atoms = []
         alkyl_coords = []
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'C':
-                n = i
+                c = i
                 break
             else:
                 alkyl_atoms.append(X)
                 alkyl_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
+        for X, coord in zip(atoms[c:], coords[c:]):
             if X == 'C':
                 alkyl_atoms.append('C')
                 alkyl_coords.append(coord)
         for coord in C_coords:
             alkyl_atoms.append('C')
             alkyl_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
+        for X, coord in zip(atoms[c:], coords[c:]):
             if X == 'H':
                 alkyl_atoms.append('H')
                 alkyl_coords.append(coord)
@@ -365,7 +394,7 @@ class Phillips():
         return alkyl_cluster
 
     def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None,
-            point_y=False, relax=True, alkyl_radius=None, max_iter=50):
+            point_y=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -402,10 +431,42 @@ class Phillips():
         H4_coord = C2_coord + rotate_vector(tilt1, tilt0, +60.0) * bond_lengths[('C', 'H')]
         H_coords = [H1_coord, H2_coord, H3_coord, H4_coord]
 
-        if relax:
-
+        if pucker > 0:
+            n = bonds[1][bonds[0] == o][0]
+            coords[o] = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], 30.0)
+            for i in range(alkyl_length):
+                C_coords[i] = coords[n] + rotate_vector(C_coords[i] - coords[n], -axes[0], 30.0)
+            for i in range(2*alkyl_length+1):
+                H_coords[i] = coords[n] + rotate_vector(H_coords[i] - coords[n], -axes[0], 30.0)
             if 'C' in atoms:
+                c = len(atoms)
+                for i, X in enumerate(atoms):
+                    if X == 'C':
+                        c = i
+                        break
+                ethylene = [i for i in range(c, len(atoms))]
+                for i in ethylene:
+                    coords[i] = coords[n] + rotate_vector(coords[i] - coords[n], -axes[0], 30.0)
 
+        elif pucker < 0:
+            n = bonds[1][bonds[0] == o][0]
+            coords[o] = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], 30.0)
+            for i in range(alkyl_length):
+                C_coords[i] = coords[n] + rotate_vector(C_coords[i] - coords[n], +axes[0], 30.0)
+            for i in range(2*alkyl_length+1):
+                H_coords[i] = coords[n] + rotate_vector(H_coords[i] - coords[n], +axes[0], 30.0)
+            if 'C' in atoms:
+                c = len(atoms)
+                for i, X in enumerate(atoms):
+                    if X == 'C':
+                        c = i
+                        break
+                alkyl = [i for i in range(c, len(atoms))]
+                for i in alkyl:
+                    coords[i] = coords[n] + rotate_vector(coords[i] - coords[n], +axes[0], 30.0)
+
+        if relax:
+            if 'C' in atoms:
                 c = len(atoms)
                 for i, X in enumerate(atoms):
                     if X == 'C':
@@ -415,7 +476,6 @@ class Phillips():
                 alkyl = [j for j in range(c, len(atoms))]
                 alkyl_radii = numpy.full((len(support)+6, len(alkyl)), alkyl_radius)
                 ethylene_radii = numpy.full((len(support)+len(alkyl), 6), alkyl_radius)
-
                 status = -1
                 for i in range(max_iter):
                     if status == 0:
@@ -433,10 +493,8 @@ class Phillips():
                             status = -1
 
             else:
-
                 nonneighbors = [j for j, X in enumerate(atoms) if j != o]
                 alkyl_radii = numpy.full((len(nonneighbors), 6), alkyl_radius)
-
                 status = -1
                 for i in range(max_iter):
                     if status == 0:
@@ -449,12 +507,12 @@ class Phillips():
                             H_coords = new_coords[2:]
                             status = -1
 
-        n = len(atoms)
+        c = len(atoms)
         ethylene_atoms = []
         ethylene_coords = []
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'C':
-                n = i
+                c = i
                 break
             else:
                 ethylene_atoms.append(X)
@@ -462,14 +520,14 @@ class Phillips():
         for coord in C_coords:
             ethylene_atoms.append('C')
             ethylene_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
+        for X, coord in zip(atoms[c:], coords[c:]):
             if X == 'C':
                 ethylene_atoms.append('C')
                 ethylene_coords.append(coord)
         for coord in H_coords:
             ethylene_atoms.append('H')
             ethylene_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
+        for X, coord in zip(atoms[c:], coords[c:]):
             if X == 'H':
                 ethylene_atoms.append('H')
                 ethylene_coords.append(coord)
@@ -529,9 +587,9 @@ class Phillips():
             H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * bond_lengths[('C', 'H')])
 
         for i in range(2, alkyl_length):
-            C_coords[i] = C_coords[1] + rotate_vector(C_coords[i]-C_coords[1], -tilts[1], 180.0)
+            C_coords[i] = C_coords[1] + rotate_vector(C_coords[i] - C_coords[1], -tilts[1], 180.0)
         for i in range(2, 2*alkyl_length+1):
-            H_coords[i] = C_coords[1] + rotate_vector(H_coords[i]-C_coords[1], -tilts[1], 180.0)
+            H_coords[i] = C_coords[1] + rotate_vector(H_coords[i] - C_coords[1], -tilts[1], 180.0)
 
         if point_y:
             axis = +axes[0]
@@ -576,24 +634,24 @@ class Phillips():
                         H_coords = new_coords[alkyl_length:]
                         status = -1
 
-        n = len(atoms)
+        c = len(atoms)
         transition_state_atoms = []
         transition_state_coords = []
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'C':
-                n = i
+                c = i
                 break
             else:
                 transition_state_atoms.append(X)
                 transition_state_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
+        for X, coord in zip(atoms[c:], coords[c:]):
             if X == 'C':
                 transition_state_atoms.append('C')
                 transition_state_coords.append(coord)
         for coord in C_coords:
             transition_state_atoms.append('C')
             transition_state_coords.append(coord)
-        for X, coord in zip(atoms[n:], coords[n:]):
+        for X, coord in zip(atoms[c:], coords[c:]):
             if X == 'H':
                 transition_state_atoms.append('H')
                 transition_state_coords.append(coord)
