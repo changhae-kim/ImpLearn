@@ -139,7 +139,8 @@ class Phillips():
 
         return axes
 
-    def attach_chromium(self, cluster, peripheral_oxygens=None, bond_cutoffs=None, bond_lengths=None, axes=None, relax=True, OO_radius=None, max_iter=50):
+    def attach_chromium(self, cluster, peripheral_oxygens=None, bond_cutoffs=None, bond_lengths=None, axes=None,
+            relax=True, OO_radius=None, max_iter=50):
 
         if peripheral_oxygens is None:
             peripheral_oxygens = self.peripheral_oxygens
@@ -238,7 +239,8 @@ class Phillips():
 
         return chromium_cluster
 
-    def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None, point_y=True, rotate_2=False, relax=True, alkyl_radius=None, max_iter=50):
+    def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None,
+            point_y=True, rotate_2=False, relax=True, alkyl_radius=None, max_iter=50):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -362,7 +364,8 @@ class Phillips():
 
         return alkyl_cluster
 
-    def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None, point_y=False, relax=True, alkyl_radius=None, max_iter=50):
+    def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None,
+            point_y=False, relax=True, alkyl_radius=None, max_iter=50):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
@@ -476,8 +479,8 @@ class Phillips():
         return ethylene_cluster
 
     def attach_transition_state(self, cluster, alkyl_length,
-            bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None,
-             axes=None, point_y=False, relax=True, alkyl_radius=None, max_iter=50):
+            bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None, axes=None,
+            point_y=False, relax=True, alkyl_radius=None, max_iter=50):
 
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
