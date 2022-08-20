@@ -228,10 +228,10 @@ class Phillips():
         else:
             Cr_coord = 0.5 * (coords[n] + coords[m])
 
-        chromium_atoms = ['Cr']
-        chromium_coords = [Cr_coord]
+        chromium_atoms = ['Cr', 'O', 'O']
+        chromium_coords = [Cr_coord, coords[n], coords[m]]
         for i, (X, coord) in enumerate(zip(atoms, coords)):
-            if i not in peripheral_hydrogens:
+            if i not in peripheral_hydrogens + peripheral_oxygens:
                 chromium_atoms.append(X)
                 chromium_coords.append(coord)
 
@@ -255,7 +255,7 @@ class Phillips():
         coords = cluster.get_positions()
         bonds = neighbor_list('ij', cluster, bond_cutoffs)
 
-        o = -1
+        o = len(atoms)
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'Cr':
                 o = i
@@ -437,7 +437,7 @@ class Phillips():
         coords = cluster.get_positions()
         bonds = neighbor_list('ij', cluster, bond_cutoffs)
 
-        o = -1
+        o = len(atoms)
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'Cr':
                 o = i
@@ -609,7 +609,7 @@ class Phillips():
         coords = cluster.get_positions()
         bonds = neighbor_list('ij', cluster, bond_cutoffs)
 
-        o = -1
+        o = len(atoms)
         for i, (X, coord) in enumerate(zip(atoms, coords)):
             if X == 'Cr':
                 o = i
