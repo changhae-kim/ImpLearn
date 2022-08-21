@@ -124,7 +124,7 @@ class Phillips():
         for i in peripheral_oxygens:
             i_neighbors = bonds[1][bonds[0] == i]
             for j in i_neighbors:
-                if atoms[j] == 'Si':
+                if atoms[j] == 'Si' and j not in chasis_silicons:
                     chasis_silicons.append(j)
 
         n, m = peripheral_oxygens
@@ -162,9 +162,9 @@ class Phillips():
         for i in peripheral_oxygens:
             i_neighbors = bonds[1][bonds[0] == i]
             for j in i_neighbors:
-                if atoms[j] == 'H':
+                if atoms[j] == 'H' and j not in peripheral_hydrogens:
                     peripheral_hydrogens.append(j)
-                elif atoms[j] == 'Si':
+                elif atoms[j] == 'Si' and j not in chasis_silicons:
                     chasis_silicons.append(j)
 
         n, m = peripheral_oxygens
