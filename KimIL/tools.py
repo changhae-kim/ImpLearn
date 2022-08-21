@@ -46,7 +46,7 @@ def get_zmatrix_coords(coord, refs):
         zmatrix.append(molecule.get_dihedral(0, 1, 2, 3))
     return zmatrix
 
-def create_zmatrix(atoms, coords):
+def construct_zmatrix(atoms, coords):
     X_atoms = []
     X_coords = []
     H_atoms = []
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         molecule = read(file_path, 0, 'xyz')
         atoms = molecule.get_chemical_symbols()
         coords = molecule.get_positions()
-        atoms, indices, coords = create_zmatrix(atoms, coords)
+        atoms, indices, coords = construct_zmatrix(atoms, coords)
         print(atoms)
         print([i+1 for i in indices])
         print(coords)
@@ -127,7 +127,7 @@ if __name__ == '__main__':
         molecule = read(file_path, 0, 'xyz')
         atoms = molecule.get_chemical_symbols()
         coords = molecule.get_positions()
-        atoms, indices, coords = create_zmatrix(atoms[6:18], coords[6:18])
+        atoms, indices, coords = construct_zmatrix(atoms[6:18], coords[6:18])
         print(atoms)
         print([i+1 for i in indices])
         print(coords)
