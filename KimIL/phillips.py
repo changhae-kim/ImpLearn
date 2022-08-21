@@ -88,7 +88,7 @@ class Phillips():
             else:
                 self.peripheral_oxygens.append(n)
 
-        self.axes = self.define_axes(self.cluster)
+        self.axes = self.get_axes(self.cluster)
         self.chromium_cluster = self.attach_chromium(self.cluster)
 
         self.L_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, pucker=+1)
@@ -109,7 +109,7 @@ class Phillips():
         cluster = read(file_path, 0, file_type)
         return cluster
 
-    def define_axes(self, cluster, peripheral_oxygens=None, bond_cutoffs=None):
+    def get_axes(self, cluster, peripheral_oxygens=None, bond_cutoffs=None):
 
         if peripheral_oxygens is None:
             peripheral_oxygens = self.peripheral_oxygens
@@ -220,7 +220,7 @@ class Phillips():
                         need_new_axes = True
                         status = -1
             if need_new_axes:
-                self.axes = axes = self.define_axes(Atoms(atoms, coords))
+                self.axes = axes = self.get_axes(Atoms(atoms, coords))
 
         OO_dist = numpy.linalg.norm(coords[m] - coords[n])
         if OO_dist < 2.0 * bond_lengths[('Cr', 'O')]:

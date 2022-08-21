@@ -23,10 +23,10 @@ class Silanols():
         self.viable_cutoff = viable_cutoff
         self.OH_bond_length = OH_bond_length
 
-        self.OH_groups = self.find_OH_groups()
-        self.geminal_OH_pairs = self.find_geminal_OH_pairs()
-        self.vicinal_OH_pairs = self.find_vicinal_OH_pairs()
-        self.viable_OH_pairs = self.find_viable_OH_pairs()
+        self.OH_groups = self.get_OH_groups()
+        self.geminal_OH_pairs = self.get_geminal_OH_pairs()
+        self.vicinal_OH_pairs = self.get_vicinal_OH_pairs()
+        self.viable_OH_pairs = self.get_viable_OH_pairs()
         self.minimal_clusters = self.carve_minimal_clusters()
 
         return
@@ -38,7 +38,7 @@ class Silanols():
             slab.set_cell(pbc)
         return slab
 
-    def find_OH_groups(self, slab=None, bond_cutoffs=None, exclude_waters=True):
+    def get_OH_groups(self, slab=None, bond_cutoffs=None, exclude_waters=True):
 
         if slab is None:
             slab = self.slab
@@ -62,7 +62,7 @@ class Silanols():
 
         return OH_groups
 
-    def find_geminal_OH_pairs(self, slab=None, bond_cutoffs=None, OH_groups=None):
+    def get_geminal_OH_pairs(self, slab=None, bond_cutoffs=None, OH_groups=None):
 
         if slab is None:
             slab = self.slab
@@ -86,7 +86,7 @@ class Silanols():
 
         return geminal_OH_pairs
 
-    def find_vicinal_OH_pairs(self, slab=None, bond_cutoffs=None, OH_groups=None):
+    def get_vicinal_OH_pairs(self, slab=None, bond_cutoffs=None, OH_groups=None):
 
         if slab is None:
             slab = self.slab
@@ -120,7 +120,7 @@ class Silanols():
 
         return vicinal_OH_pairs
 
-    def find_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None, exclude_geminals=True, geminal_OH_pairs=None):
+    def get_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None, exclude_geminals=True, geminal_OH_pairs=None):
 
         if slab is None:
             slab = self.slab
