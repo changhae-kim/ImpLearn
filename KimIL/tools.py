@@ -33,6 +33,19 @@ def calc_log_K(T, G_r, G_p):
     G_p = numpy.array(G_p)
     return -(G_p - G_r) / (kB * T)
 
+def get_zmatrix_coords(coord, refs):
+    atoms = (1 + len(refs)) * 'H'
+    coords = [coord] + refs
+    molecule = Atoms(atoms, coords)
+    zmatrix = []
+    if len(refs) >= 1:
+        zmatrix.append(molecule.get_distance(0, 1))
+    if len(refs) >= 2:
+        zmatrix.append(molecule.get_angle(0, 1, 2))
+    if len(refs) >= 3:
+        zmatrix.append(molecule.get_dihedral(0, 1, 2, 3))
+    return zmatrix
+
 def create_zmatrix(atoms, coords):
     X_atoms = []
     X_coords = []
