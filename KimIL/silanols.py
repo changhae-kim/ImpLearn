@@ -175,7 +175,7 @@ class Silanols():
 
             peripheral_hydrogens = [OH1_group[0], OH2_group[0]]
             cluster_atoms.append('H')
-            cluster_coords.append(numpy.zeros((3,)))
+            cluster_coords.append(numpy.zeros(3))
             cluster_atoms.append('H')
             cluster_coords.append(cluster_coords[0] + slab.get_distance(OH1_group[0], OH2_group[0], mic=True, vector=True))
 
