@@ -86,7 +86,7 @@ class Gaussian():
         if prefix is None:
             prefix = self.prefix
 
-        if self.product_optimizations == []:
+        if self.catalyst_optimizations == []:
             for i, cluster in enumerate(self.catalysts):
                 label = '{:s}_b{:d}'.format(prefix, i)
                 self.catalyst_optimizations.append(label)

@@ -14,6 +14,15 @@ def check_normal_termination(file_path):
     else:
         return False
 
+def check_geometry(cluster, criteria):
+    status = True
+    for (i, j), (dmin, dmax) in criteria.items():
+        distance = cluster.get_distance(i, j)
+        if distance < dmin or distance > dmax:
+            status = False
+            break
+    return status
+
 def read_geometry_optimization(file_path):
     f = open(file_path, 'rt')
     n_cycles = 0
@@ -184,15 +193,6 @@ def read_thermochemistry_salman(file_path, new_constants=False):
     G = G_total + kB * T * (1.0 + log_Q_t + log_Q_r)
 
     return G
-
-def check_geometry(cluster, criteria):
-    status = True
-    for (i, j), (dmin, dmax) in criteria.items():
-        distance = cluster.get_distance(i, j)
-        if distance < dmin or distance > dmax:
-            status = False
-            break
-    return status
 
 
 if __name__ == '__main__':

@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     rng = numpy.random.RandomState(0)
 
-    '''
+    
     n_samples, n_features = 10, 5
     X = rng.randn(n_samples, n_features)
     y = rng.randn(n_samples)
@@ -98,8 +98,8 @@ if __name__ == '__main__':
     print(kernel.matrix)
     z = kernel.predict(X)
     print(z)
+    
     '''
-
     n_samples, n_features = 200, 2
     X = 5.0 * rng.randn(n_samples, n_features)
     y = numpy.cos((X[:, 0]**2.0 + X[:, 1]**2.0)**0.5)
@@ -114,5 +114,5 @@ if __name__ == '__main__':
     print(z)
     z = kernel.predict(Z)
     print(z)
-
+    '''
 

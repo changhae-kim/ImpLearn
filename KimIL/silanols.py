@@ -148,7 +148,7 @@ class Silanols():
 
         return viable_OH_pairs
 
-    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=True):
+    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=True, F_capping=False):
 
         if slab is None:
             slab = self.slab
@@ -232,17 +232,23 @@ class Silanols():
                 for coord in old_coords[q:]:
                     cluster_coords.append(coord)
 
-            podal_hydrogens = []
-            for n, i in enumerate(podal_oxygens):
-                i_neighbors = bonds[1][bonds[0] == i]
-                for j in i_neighbors:
-                    if atoms[j] == 'Si' and j not in peripheral_hydrogens + chasis_silicons:
-                        m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
-                        podal_hydrogens.append(j)
-                        cluster_atoms.append('H')
-                        axis = slab.get_distance(i, j, mic=True, vector=True)
-                        axis = axis / numpy.linalg.norm(axis)
-                        cluster_coords.append(cluster_coords[m + n] + axis * OH_bond_length)
+            if F_capping:
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
+                for n, i in enumerate(podal_oxygens):
+                    cluster_atoms[m + n] = 'F'
+
+            else:
+                podal_hydrogens = []
+                for n, i in enumerate(podal_oxygens):
+                    i_neighbors = bonds[1][bonds[0] == i]
+                    for j in i_neighbors:
+                        if atoms[j] == 'Si' and j not in chasis_silicons:
+                            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
+                            podal_hydrogens.append(j)
+                            cluster_atoms.append('H')
+                            axis = slab.get_distance(i, j, mic=True, vector=True)
+                            axis = axis / numpy.linalg.norm(axis)
+                            cluster_coords.append(cluster_coords[m + n] + axis * OH_bond_length)
 
             cluster = Atoms(cluster_atoms, cluster_coords)
             minimal_clusters.append(cluster)
