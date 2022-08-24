@@ -51,6 +51,10 @@ class Sampler():
 
             samples = [i for i in new_samples if i not in exclude]
             if len(samples) < batch_size:
+                ### This is an artifact...
+                if weights is None:
+                    weights = numpy.ones(self.n_points)/self.n_points
+                ### Dispose when the opportunity arises...
                 resamples = self.sample(weights, batch_size=batch_size-len(samples))
                 samples.extend(resamples)
 
