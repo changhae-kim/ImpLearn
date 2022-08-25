@@ -40,17 +40,17 @@ class Phillips():
 
     def do_polymer(self, alkyl_lengths=[4, 6]):
 
-        self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
+        self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True)
         self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
                 cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, relax=False),
-                point_y=False, pucker=+1, relax=True)
-        self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False, pucker=+1)
+                point_y=False, relax=True)
+        self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False)
 
-        self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=-1)
+        self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False)
         self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
                 cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, relax=False),
-                point_y=True, pucker=-1, relax=True)
-        self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=-1)
+                point_y=True, relax=True)
+        self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True)
 
         self.done_polymer = True
 
@@ -174,6 +174,31 @@ class Phillips():
             Cr_coord = 0.5 * (coords[n] + coords[m]) + axes[2] * ((bond_lengths[('Cr', 'O')])**2.0 - (0.5 * OO_dist)**2.0)**0.5
         else:
             Cr_coord = 0.5 * (coords[n] + coords[m])
+
+        if relax:
+
+            nonperipheral_oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in peripheral_oxygens]
+            CrO_radii = []
+            for i in nonperipheral_oxygens:
+                if atoms[i] == 'O':
+                    CrO_bond_cutoff = bond_cutoffs[('Cr', 'O')]
+                elif atoms[i] == 'F':
+                    CrO_bond_cutoff = bond_cutoffs[('Cr', 'F')]
+                CrO_radii.append([CrO_bond_cutoff])
+            CrO_radii = numpy.array(CrO_radii)
+
+            status = -1
+            for i in range(max_iter):
+                if status == 0:
+                    break
+                else:
+                    status = 0
+                    new_coords = step_repulsive(Cr_coord[numpy.newaxis, :], 0.5 * (coords[n] + coords[m]), coords[nonperipheral_oxygens], CrO_radii, axis=axes[0])
+                    if numpy.any(new_coords[0] != Cr_coord):
+                        Cr_coord = new_coords[0]
+                        status = -1
+
+            axes = self.get_axes(Atoms(atoms, coords), peripheral_oxygens)
 
         chromium_atoms = ['Cr', 'O', 'O']
         chromium_coords = [Cr_coord, coords[n], coords[m]]
