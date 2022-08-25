@@ -14,7 +14,11 @@ class Silanols():
             pbc=None,
             bond_cutoffs={('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
             viable_cutoff=4.5,
-            OH_bond_length=0.96
+            OH_bond_length=0.96,
+            exclude_waters=True,
+            exclude_geminals=True,
+            reorder_podals=True,
+            F_capping=False
             ):
 
         self.slab = self.load_slab(file_path, file_type, pbc)
@@ -22,6 +26,10 @@ class Silanols():
         self.bond_cutoffs = bond_cutoffs
         self.viable_cutoff = viable_cutoff
         self.OH_bond_length = OH_bond_length
+
+        self.exclude_waters = exclude_waters
+        self.exclude_geminals = exclude_geminals
+        self.reorder_podals = reorder_podals
 
         self.OH_groups = self.get_OH_groups()
         self.geminal_OH_pairs = self.get_geminal_OH_pairs()
@@ -38,12 +46,14 @@ class Silanols():
             slab.set_cell(pbc)
         return slab
 
-    def get_OH_groups(self, slab=None, bond_cutoffs=None, exclude_waters=True):
+    def get_OH_groups(self, slab=None, bond_cutoffs=None, exclude_waters=None):
 
         if slab is None:
             slab = self.slab
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
+        if exclude_waters is None:
+            exclude_waters = self.exclude_waters
 
         atoms = slab.get_chemical_symbols()
         bonds = neighbor_list('ij', slab, bond_cutoffs)
@@ -120,7 +130,7 @@ class Silanols():
 
         return vicinal_OH_pairs
 
-    def get_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None, exclude_geminals=True, geminal_OH_pairs=None):
+    def get_viable_OH_pairs(self, slab=None, OH_groups=None, viable_cutoff=None, exclude_geminals=None, geminal_OH_pairs=None):
 
         if slab is None:
             slab = self.slab
@@ -128,6 +138,8 @@ class Silanols():
             OH_groups = self.OH_groups
         if viable_cutoff is None:
             viable_cutoff = self.viable_cutoff
+        if exclude_geminals is None:
+            exclude_geminals = self.exclude_geminals
         if geminal_OH_pairs is None:
             geminal_OH_pairs = self.geminal_OH_pairs
 
@@ -148,7 +160,7 @@ class Silanols():
 
         return viable_OH_pairs
 
-    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=True, F_capping=False):
+    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=None, F_capping=None):
 
         if slab is None:
             slab = self.slab
@@ -160,6 +172,10 @@ class Silanols():
             viable_OH_pairs = self.viable_OH_pairs
         if OH_bond_length is None:
             OH_bond_length = self.OH_bond_length
+        if reorder_podals is None:
+            reorder_podals = self.reorder_podals
+        if F_capping is None:
+            F_capping = self.F_capping
 
         atoms = slab.get_chemical_symbols()
         bonds = neighbor_list('ij', slab, bond_cutoffs)
