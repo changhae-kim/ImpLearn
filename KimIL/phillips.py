@@ -1,20 +1,21 @@
 import numpy
+import os
 
 from ase import Atoms
 from ase.io import read, write
 from ase.neighborlist import neighbor_list
 
-from phillips_tools import rotate_vector, step_attractive, step_repulsive
+from .phillips_tools import rotate_vector, step_attractive, step_repulsive
 
 
 class Phillips():
 
     def __init__(self, file_path, file_type,
             peripheral_oxygens=[2, 3],
-            alkyl_lengths=[4, 6],
             bond_cutoffs={
                 ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
                 ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2,
+                ('F', 'F'): 2.0, ('O', 'F'): 2.0, ('Si', 'F'): 2.3, ('F', 'H'): 1.2,
                 },
             bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
             ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
@@ -31,29 +32,27 @@ class Phillips():
         self.alkyl_radius = alkyl_radius
 
         self.cluster = self.load_cluster(file_path, file_type)
+        self.axes, self.chromium_cluster = self.attach_chromium(peripheral_oxygens)
 
-        self.alkyl_lengths = alkyl_lengths
-        self.peripheral_oxygens = []
-        for i, n in enumerate(peripheral_oxygens):
-            if n < 0:
-                self.peripheral_oxygens.append(len(self.slab.get_chemical_symbols()) + n)
-            else:
-                self.peripheral_oxygens.append(n)
+        self.done_polymer = False
 
-        self.axes = self.get_axes(self.cluster)
-        self.chromium_cluster = self.attach_chromium(self.cluster)
+        return
 
-        self.L_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, pucker=+1)
+    def do_polymer(self, alkyl_lengths=[4, 6]):
+
+        self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
         self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
-                self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=True, relax=False),
+                cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, relax=False),
                 point_y=False, pucker=+1, relax=True)
-        self.LR_transition_state_cluster = self.attach_transition_state(self.chromium_cluster, self.alkyl_lengths[1], point_y=False, pucker=+1)
+        self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False, pucker=+1)
 
-        self.R_butyl_cluster = self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=False, pucker=-1)
+        self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=-1)
         self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
-                self.attach_alkyl(self.chromium_cluster, self.alkyl_lengths[0], point_y=False, relax=False),
+                cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, relax=False),
                 point_y=True, pucker=-1, relax=True)
-        self.RL_transition_state_cluster = self.attach_transition_state(self.chromium_cluster, self.alkyl_lengths[1], point_y=True, pucker=-1)
+        self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=-1)
+
+        self.done_polymer = True
 
         return
 
@@ -61,10 +60,8 @@ class Phillips():
         cluster = read(file_path, 0, file_type)
         return cluster
 
-    def get_axes(self, cluster, peripheral_oxygens=None, bond_cutoffs=None):
+    def get_axes(self, cluster, peripheral_oxygens, bond_cutoffs=None):
 
-        if peripheral_oxygens is None:
-            peripheral_oxygens = self.peripheral_oxygens
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
 
@@ -91,17 +88,15 @@ class Phillips():
 
         return axes
 
-    def attach_chromium(self, cluster, peripheral_oxygens=None, bond_cutoffs=None, bond_lengths=None, axes=None,
+    def attach_chromium(self, peripheral_oxygens, cluster=None, bond_cutoffs=None, bond_lengths=None,
             relax=True, OO_radius=None, max_iter=50):
 
-        if peripheral_oxygens is None:
-            peripheral_oxygens = self.peripheral_oxygens
+        if cluster is None:
+            cluster = self.cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
         if bond_lengths is None:
             bond_lengths = self.bond_lengths
-        if axes is None:
-            axes = self.axes
         if OO_radius is None:
             OO_radius = self.OO_radius
 
@@ -149,7 +144,6 @@ class Phillips():
                 OX2_radii.append([OX_bond_cutoff])
             OX2_radii = numpy.array(OX2_radii)
 
-            need_new_axes = False
             status = -1
             for i in range(max_iter):
                 if status == 0:
@@ -159,20 +153,17 @@ class Phillips():
                     new_coords = step_attractive(coords[n], coords[m], coords[p], coords[q], OO_radius)
                     if numpy.any(new_coords[0] != coords[n]) or numpy.any(new_coords[1] != coords[m]):
                         coords[n], coords[m] = new_coords[0], new_coords[1]
-                        need_new_axes = True
                         status = -1
                     new_coords = step_repulsive(coords[n][numpy.newaxis, :], coords[p], coords[O1_nonneighbors], OX1_radii)
                     if numpy.any(new_coords[0] != coords[n]):
                         coords[n] = new_coords[0]
-                        need_new_axes = True
                         status = -1
                     new_coords = step_repulsive(coords[m][numpy.newaxis, :], coords[q], coords[O2_nonneighbors], OX2_radii)
                     if numpy.any(new_coords[0] != coords[m]):
                         coords[m] = new_coords[0]
-                        need_new_axes = True
                         status = -1
-            if need_new_axes:
-                self.axes = axes = self.get_axes(Atoms(atoms, coords))
+
+        axes = self.get_axes(Atoms(atoms, coords), peripheral_oxygens)
 
         OO_dist = numpy.linalg.norm(coords[m] - coords[n])
         if OO_dist < 2.0 * bond_lengths[('Cr', 'O')]:
@@ -189,11 +180,13 @@ class Phillips():
 
         chromium_cluster = Atoms(chromium_atoms, chromium_coords)
 
-        return chromium_cluster
+        return axes, chromium_cluster
 
-    def attach_alkyl(self, cluster, alkyl_length, bond_cutoffs=None, bond_lengths=None, axes=None,
+    def attach_alkyl(self, alkyl_length, cluster=None, bond_cutoffs=None, bond_lengths=None, axes=None,
             point_y=True, rotate_2=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
+        if cluster is None:
+            cluster = self.chromium_cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
         if bond_lengths is None:
@@ -371,9 +364,11 @@ class Phillips():
 
         return alkyl_cluster
 
-    def attach_ethylene(self, cluster, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None,
+    def attach_ethylene(self, cluster=None, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None,
             point_y=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
+        if cluster is None:
+            cluster = self.chromium_cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
         if bond_lengths is None:
@@ -540,10 +535,12 @@ class Phillips():
 
         return ethylene_cluster
 
-    def attach_transition_state(self, cluster, alkyl_length,
-            bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None, axes=None,
+    def attach_transition_state(self, alkyl_length,
+            cluster=None, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None, axes=None,
             point_y=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
+        if cluster is None:
+            cluster = self.chromium_cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
         if bond_lengths is None:
@@ -711,17 +708,20 @@ class Phillips():
 
     def save_clusters(self, file_path, file_type, labels=None, clusters=None):
         if labels is None:
-            labels = [
-                    'L-butyl', 'L-butyl-R-ethylene', 'LR-transition-state',
-                    'R-butyl', 'R-butyl-L-ethylene', 'RL-transition-state',
-                    ]
-        if clusters is None:
-            clusters = [
-                    self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_state_cluster,
-                    self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_state_cluster,
-                    ]
+            labels = []
+            clusters = []
+            if self.done_polymer:
+                labels += [
+                        'L-butyl', 'L-butyl-R-ethylene', 'LR-transition-state',
+                        'R-butyl', 'R-butyl-L-ethylene', 'RL-transition-state',
+                        ]
+                clusters += [
+                        self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_state_cluster,
+                        self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_state_cluster,
+                        ]
         for label, cluster in zip(labels, clusters):
-            write(file_path.format(label), cluster, file_type)
+            if not os.path.exists(file_path.format(label)):
+                write(file_path.format(label), cluster, file_type)
         return
 
 
@@ -729,6 +729,7 @@ if __name__ == '__main__':
 
 
     clusters = Phillips('tests/A_0001.xyz', 'xyz', [2, 3])
+    clusters.do_polymer()
     clusters.save_clusters('A_0001_{:s}.xyz', 'xyz')
 
 
