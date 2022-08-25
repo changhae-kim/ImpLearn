@@ -4,7 +4,7 @@ import os
 from ase import Atoms
 from ase.io import read
 
-from .gaussian_tools import check_normal_termination, read_geometry_optimization, read_thermochemistry, check_geometry
+from .gaussian_tools import check_normal_termination, read_geometry_optimization, read_thermochem, check_geometry
 
 
 class Gaussian():
@@ -333,44 +333,44 @@ class Gaussian():
 
         if self.catalyst_gibbs_energies == []:
             for label in self.catalyst_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 self.catalyst_gibbs_energies.append(gibbs_energy)
 
         if self.reactant_gibbs_energies == []:
             for label in self.reactant_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 self.reactant_gibbs_energies.append(gibbs_energy)
 
         if self.product_gibbs_energies == []:
             for label in self.product_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 self.product_gibbs_energies.append(gibbs_energy)
 
         if self.transition_state_gibbs_energies == []:
             for label in self.transition_state_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 self.transition_state_gibbs_energies.append(gibbs_energy)
 
         if temp != self.temp or pressure != self.pressure:
 
             catalyst_gibbs_energies = []
             for label in self.catalyst_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 catalyst_gibbs_energies.append(gibbs_energy)
 
             reactant_gibbs_energies = []
             for label in self.reactant_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 reactant_gibbs_energies.append(gibbs_energy)
 
             product_gibbs_energies = []
             for label in self.product_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 product_gibbs_energies.append(gibbs_energy)
 
             transition_state_gibbs_energies = []
             for label in self.transition_state_optimizations:
-                gibbs_energy = read_thermochemistry('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
+                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
                 transition_state_gibbs_energies.append(gibbs_energy)
 
         else:

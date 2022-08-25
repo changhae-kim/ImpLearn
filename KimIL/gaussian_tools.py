@@ -59,7 +59,7 @@ def read_geometry_optimization(file_path):
         clusters.append(Atoms(atoms, coords))
     return energies, clusters
 
-def read_thermochemistry(file_path, temp=None, pressure=None,
+def read_thermochem(file_path, temp=None, pressure=None,
         elec=True, trans=False, rot=False, vib=True):
 
     kB = 1.380649e-23 / 4.3597447222071e-18
@@ -132,7 +132,7 @@ def read_thermochemistry(file_path, temp=None, pressure=None,
 
     return G
 
-def read_thermochemistry_salman(file_path, new_constants=False):
+def read_thermochem_salman(file_path, new_constants=False):
 
     if new_constants:
         kB = 1.380649e-23 / 4.3597447222071e-18
@@ -199,17 +199,17 @@ if __name__ == '__main__':
 
 
     print('salman script', -594.3547231345688)
-    print('salman algorithm with old constants', read_thermochemistry_salman('tests/1_b.log', new_constants=False))
-    print('salman algorithm with new constants', read_thermochemistry_salman('tests/1_b.log', new_constants=True))
-    print('new algorithm', read_thermochemistry('tests/1_b.log'))
+    print('salman algorithm with old constants', read_thermochem_salman('tests/1_b.log', new_constants=False))
+    print('salman algorithm with new constants', read_thermochem_salman('tests/1_b.log', new_constants=True))
+    print('new algorithm', read_thermochem('tests/1_b.log'))
 
     elec, trans, rot, vib = True, True, True, True
-    print('act 300 K 1 atm', read_thermochemistry('tests/1_b.log', elec=elec, trans=trans, rot=rot, vib=vib))
-    print('est 600 K 1 atm', read_thermochemistry('tests/1_b.log', temp=600.0, elec=elec, trans=trans, rot=rot, vib=vib))
-    print('act 600 K 1 atm', read_thermochemistry('tests/1_b_T.log', elec=elec, trans=trans, rot=rot, vib=vib))
-    print('est 300 K 2 atm', read_thermochemistry('tests/1_b.log', pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
-    print('act 300 K 2 atm', read_thermochemistry('tests/1_b_P.log', elec=elec, trans=trans, rot=rot, vib=vib))
-    print('est 600 K 2 atm', read_thermochemistry('tests/1_b.log', temp=600.0, pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
-    print('act 600 K 2 atm', read_thermochemistry('tests/1_b_TP.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 300 K 1 atm', read_thermochem('tests/1_b.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('est 600 K 1 atm', read_thermochem('tests/1_b.log', temp=600.0, elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 600 K 1 atm', read_thermochem('tests/1_b_T.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('est 300 K 2 atm', read_thermochem('tests/1_b.log', pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 300 K 2 atm', read_thermochem('tests/1_b_P.log', elec=elec, trans=trans, rot=rot, vib=vib))
+    print('est 600 K 2 atm', read_thermochem('tests/1_b.log', temp=600.0, pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
+    print('act 600 K 2 atm', read_thermochem('tests/1_b_TP.log', elec=elec, trans=trans, rot=rot, vib=vib))
 
 
