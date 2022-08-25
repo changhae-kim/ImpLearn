@@ -83,7 +83,7 @@ def read_thermochem(file_path, temp=None, pressure=None,
                 status = 1
         elif status == 1:
             if line.strip().startswith('Frequencies'):
-                freqs += [float(x) for x in line.split()[-3:]]
+                freqs += [float(x) for x in line.split()[2:]]
             elif line.strip().startswith('- Thermochemistry -'):
                 status = 2
         elif status == 2:
