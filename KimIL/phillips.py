@@ -18,8 +18,8 @@ class Phillips():
                 ('F', 'F'): 2.0, ('O', 'F'): 2.0, ('Si', 'F'): 2.3, ('F', 'H'): 1.2,
                 },
             bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
-            ethylene_bond_lengths={('Cr', 'C'): 2.5, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
-            transition_state_lengths={('Cr', 'C1'): 2.1, ('C2', 'C3'): 2.2, ('C3', 'Cr'): 2.1},
+            ethylene_bond_lengths={('Cr', 'C'): 2.49, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
+            transition_state_lengths={('Cr', 'C1'): 2.08, ('C2', 'C3'): 2.24, ('C3', 'Cr'): 2.08},
             OO_radius=3.0,
             alkyl_radius=2.0
             ):
@@ -127,6 +127,8 @@ class Phillips():
                     OX_bond_cutoff = bond_cutoffs[('Si', 'O')]
                 elif atoms[j] == 'O':
                     OX_bond_cutoff = bond_cutoffs[('O', 'O')]
+                elif atoms[j] == 'F':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'F')]
                 elif atoms[j] == 'H':
                     OX_bond_cutoff = bond_cutoffs[('O', 'H')]
                 OX1_radii.append([OX_bond_cutoff])
@@ -139,6 +141,8 @@ class Phillips():
                     OX_bond_cutoff = bond_cutoffs[('Si', 'O')]
                 elif atoms[j] == 'O':
                     OX_bond_cutoff = bond_cutoffs[('O', 'O')]
+                elif atoms[j] == 'F':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'F')]
                 elif atoms[j] == 'H':
                     OX_bond_cutoff = bond_cutoffs[('O', 'H')]
                 OX2_radii.append([OX_bond_cutoff])
@@ -236,7 +240,7 @@ class Phillips():
         if pucker > 0:
             Cr_neighbors = bonds[1][bonds[0] == o]
             n = Cr_neighbors[0]
-            oxygens = [i for i, X in enumerate(atoms) if X == 'O' and i not in Cr_neighbors]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
             angle = 15.0
             for i in range(max_iter):
                 Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], angle)
@@ -266,7 +270,7 @@ class Phillips():
         elif pucker < 0:
             Cr_neighbors = bonds[1][bonds[0] == o]
             n = Cr_neighbors[0]
-            oxygens = [i for i, X in enumerate(atoms) if X == 'O' and i not in Cr_neighbors]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
             angle = 15.0
             for i in range(max_iter):
                 Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], angle)
@@ -407,7 +411,7 @@ class Phillips():
         if pucker > 0:
             Cr_neighbors = bonds[1][bonds[0] == o]
             n = Cr_neighbors[0]
-            oxygens = [i for i, X in enumerate(atoms) if X == 'O' and i not in Cr_neighbors]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
             angle = 15.0
             for i in range(max_iter):
                 Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], angle)
@@ -437,7 +441,7 @@ class Phillips():
         elif pucker < 0:
             Cr_neighbors = bonds[1][bonds[0] == o]
             n = Cr_neighbors[0]
-            oxygens = [i for i, X in enumerate(atoms) if X == 'O' and i not in Cr_neighbors]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
             angle = 15.0
             for i in range(max_iter):
                 Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], angle)
@@ -623,7 +627,7 @@ class Phillips():
         if pucker > 0:
             Cr_neighbors = bonds[1][bonds[0] == o]
             n = Cr_neighbors[0]
-            oxygens = [i for i, X in enumerate(atoms) if X == 'O' and i not in Cr_neighbors]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
             angle = 15.0
             for i in range(max_iter):
                 Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], angle)
@@ -644,7 +648,7 @@ class Phillips():
         elif pucker < 0:
             Cr_neighbors = bonds[1][bonds[0] == o]
             n = Cr_neighbors[0]
-            oxygens = [i for i, X in enumerate(atoms) if X == 'O' and i not in Cr_neighbors]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
             angle = 15.0
             for i in range(max_iter):
                 Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], angle)

@@ -30,6 +30,7 @@ class Silanols():
         self.exclude_waters = exclude_waters
         self.exclude_geminals = exclude_geminals
         self.reorder_podals = reorder_podals
+        self.F_capping = F_capping
 
         self.OH_groups = self.get_OH_groups()
         self.geminal_OH_pairs = self.get_geminal_OH_pairs()
@@ -336,8 +337,7 @@ class Silanols():
 if __name__ == '__main__':
 
 
-    clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp',
-            bond_cutoffs = {('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2})
+    clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp')
     print('--- MAIN ---')
     print('Atoms')
     atoms = clusters.slab.get_chemical_symbols()
