@@ -4,7 +4,7 @@ import os
 from ase import Atoms
 from ase.io import read
 
-from .gaussian_tools import check_normal_termination, read_geometry_optimization, read_thermochem, check_geometry
+from gaussian_tools import check_normal_termination, read_geometry_optimization, read_thermochem, check_geometry
 
 
 class Gaussian():
@@ -84,7 +84,10 @@ class Gaussian():
             else:
                 self.gen_basis = gen_basis
         if frozen_atoms is not None:
-            self.frozen_atoms = frozen_atoms
+            if isinstance(frozen_atoms[0], int):
+                self.frozen_atoms = [frozen_atoms, frozen_atoms, frozen_atoms, frozen_atoms]
+            else:
+                self.frozen_atoms = frozen_atoms
         if scan_params is not None:
             self.scan_params = scan_params
         if scan_reverse is not None:
@@ -102,19 +105,19 @@ class Gaussian():
             for i, cluster in enumerate(self.catalysts):
                 label = '{:s}_b{:d}'.format(prefix, i)
                 self.catalyst_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[0], self.mults[0], self.gen_basis[0])
+                self.setup_geometry_optimization(label, cluster, 0)
 
         if self.reactant_optimizations == []:
             for i, cluster in enumerate(self.reactants):
                 label = '{:s}_r{:d}'.format(prefix, i)
                 self.reactant_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[1], self.mults[1], self.gen_basis[1])
+                self.setup_geometry_optimization(label, cluster, 1)
 
         if self.product_optimizations == []:
             for i, cluster in enumerate(self.products):
                 label = '{:s}_p{:d}'.format(prefix, i)
                 self.product_optimizations.append(label)
-                self.setup_geometry_optimization(label, cluster, self.charges[2], self.mults[2], self.gen_basis[2])
+                self.setup_geometry_optimization(label, cluster, 2)
 
         if self.transition_states == []:
 
@@ -122,19 +125,19 @@ class Gaussian():
                 for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
                     label = '{:s}_t{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)], self.charges[3], self.mults[3], self.gen_basis[3])
+                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)])
 
             elif self.scan_reverse and self.product_energies != [] and self.scans == []:
                 for i, cluster in enumerate(product_clusters):
                     label = '{:s}_s{:d}'.format(prefix, i)
                     self.scans.append(label)
-                    self.setup_scan(label, cluster, self.charges[3], self.mults[3], self.gen_basis[3])
+                    self.setup_scan(label, cluster)
 
             elif not self.scan_reverse and self.reactant_energies != [] and self.scans == []:
                 for i, cluster in enumerate(reactant_clusters):
                     label = '{:s}_s{:d}'.format(prefix, i)
                     self.scans.append(label)
-                    self.setup_scan(label, cluster, self.charges[3], self.mults[3], self.gen_basis[3])
+                    self.setup_scan(label, cluster)
 
         else:
 
@@ -142,11 +145,11 @@ class Gaussian():
                 for i, cluster in enumerate(self.transition_states):
                     label = '{:s}_t{:d}'.format(prefix, i)
                     self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, cluster, self.charges[3], self.mults[3], self.gen_basis[3])
+                    self.setup_transition_state_optimization(label, cluster)
 
         return
 
-    def setup_geometry_optimization(self, label, cluster, charge, mult, gen_basis=None):
+    def setup_geometry_optimization(self, label, cluster, state):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -157,17 +160,17 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=self.temp, pressure=self.pressure)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
-            if j in self.frozen_atoms:
+            if j in self.frozen_atoms[state]:
                 atom_type = -1
             else:
                 atom_type = 0
             body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
         if self.basis in ['gen', 'Gen', 'GEN']:
-            footer += gen_basis + '\n\n'
+            footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
             f = open('{:s}.com'.format(label), 'wt')
@@ -176,7 +179,7 @@ class Gaussian():
 
         return
 
-    def setup_scan(self, label, cluster, charge, mult):
+    def setup_scan(self, label, cluster, state=3):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -187,10 +190,10 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, label=label, charge=charge, mult=mult)
+'''.format(n_proc=self.n_proc, label=label, charge=self.charges[state], mult=self.mults[state])
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
-            if j in self.frozen_atoms:
+            if j in self.frozen_atoms[state]:
                 atom_type = -1
             else:
                 atom_type = 0
@@ -204,7 +207,7 @@ class Gaussian():
 
         return
 
-    def setup_transition_state_optimization(self, label, cluster, charge, mult, gen_basis=None):
+    def setup_transition_state_optimization(self, label, cluster, state=3):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -215,17 +218,17 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=charge, mult=mult, temp=self.temp, pressure=self.pressure)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
-            if j in self.frozen_atoms:
+            if j in self.frozen_atoms[state]:
                 atom_type = -1
             else:
                 atom_type = 0
             body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
         if self.basis in ['gen', 'Gen', 'GEN']:
-            footer += gen_basis + '\n\n'
+            footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
             f = open('{:s}.com'.format(label), 'wt')
@@ -399,13 +402,13 @@ if __name__ == '__main__':
 
 
     gauss = Gaussian(
-            ['tests/A_0001_L-butyl.xyz', 'tests/A_0001_R-butyl.xyz'],
-            ['tests/A_0001_L-butyl-R-ethylene.xyz', 'tests/A_0001_R-butyl-L-ethylene.xyz'],
-            ['tests/A_0001_R-hexyl.xyz', 'tests/A_0001_L-hexyl.xyz'],
-            ['tests/A_0001_LR-transition-state.xyz', 'tests/A_0001_RL-transition-state.xyz'],
-            'A_0001')
+            ['tests/A_0466_L-butyl.xyz', 'tests/A_0466_R-butyl.xyz'],
+            ['tests/A_0466_L-butyl-R-ethylene.xyz', 'tests/A_0466_R-butyl-L-ethylene.xyz'],
+            [],
+            ['tests/A_0466_LR-transition-state.xyz', 'tests/A_0466_RL-transition-state.xyz'],
+            'A_0466')
     gauss.setup()
-    gauss.run()
-    gibbs_energies = gauss.get_gibbs_energies()
-    print(gibbs_energies)
+    #gauss.run()
+    #gibbs_energies = gauss.get_gibbs_energies()
+    #print(gibbs_energies)
 

@@ -898,9 +898,9 @@ class Phillips():
 if __name__ == '__main__':
 
 
-    clusters = Phillips('tests/A_0001.xyz', 'xyz', [2, 3])
+    clusters = Phillips('tests/A_0466.xyz', 'xyz', [2, 3])
     clusters.do_polymer()
     clusters.do_graft()
-    clusters.save_clusters('A_0001_{:s}.xyz', 'xyz')
+    clusters.save_clusters('A_0466_{:s}.xyz', 'xyz')
 
 
