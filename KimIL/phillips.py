@@ -636,10 +636,10 @@ class Phillips():
         else:
             axis = -axes[0]
 
-        x = numpy.array([1.0, 0.0])
-        y = numpy.array([0.0, 1.0])
-        ab = ethylene_bond_lengths[('C', 'C')] * x
-        bc = transition_state_lengths[('C2', 'C3')] * (x * numpy.cos((180.0-109.5)/180.0*numpy.pi) + y * numpy.sin((180.0-109.5)/180.0*numpy.pi))
+        xaxis = numpy.array([1.0, 0.0])
+        yaxis = numpy.array([0.0, 1.0])
+        ab = ethylene_bond_lengths[('C', 'C')] * xaxis
+        bc = transition_state_lengths[('C2', 'C3')] * (xaxis * numpy.cos((180.0-109.5)/180.0*numpy.pi) + yaxis * numpy.sin((180.0-109.5)/180.0*numpy.pi))
         ac = ab + bc
         ph3 = numpy.arccos(numpy.dot(ab, ac)/(numpy.linalg.norm(ab)*numpy.linalg.norm(ac)))
         l1 = transition_state_lengths[('C3', 'Cr')]
