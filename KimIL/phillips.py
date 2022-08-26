@@ -15,19 +15,22 @@ class Phillips():
             bond_cutoffs={
                 ('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2,
                 ('Cr', 'O'): 2.3, ('Cr', 'C'): 2.3, ('C', 'C'): 2.0, ('C', 'H'): 1.2,
-                ('F', 'F'): 2.0, ('O', 'F'): 2.0, ('Si', 'F'): 2.3, ('F', 'H'): 1.2,
+                ('F', 'F'): 2.0, ('O', 'F'): 2.0, ('Cr', 'F'): 2.3, ('Si', 'F'): 2.3, ('F', 'H'): 1.2,
+                ('Cr', 'Cl'): 2.3,
                 },
-            bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
+            alkyl_bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
             ethylene_bond_lengths={('Cr', 'C'): 2.49, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
             transition_state_lengths={('Cr', 'C1'): 2.08, ('C2', 'C3'): 2.24, ('C3', 'Cr'): 2.08},
+            chromyl_bond_lengths={('Cr', 'O'): 1.53, ('Cr', 'Cl'): 2.12},
             OO_radius=3.0,
             alkyl_radius=2.0
             ):
 
         self.bond_cutoffs = bond_cutoffs
-        self.bond_lengths = bond_lengths
+        self.alkyl_bond_lengths = alkyl_bond_lengths
         self.ethylene_bond_lengths = ethylene_bond_lengths
         self.transition_state_lengths = transition_state_lengths
+        self.chromyl_bond_lengths = chromyl_bond_lengths
         self.OO_radius = OO_radius
         self.alkyl_radius = alkyl_radius
 
@@ -35,6 +38,7 @@ class Phillips():
         self.axes, self.chromium_cluster = self.attach_chromium(peripheral_oxygens)
 
         self.done_polymer = False
+        self.done_graft = False
 
         return
 
@@ -54,6 +58,11 @@ class Phillips():
 
         self.done_polymer = True
 
+        return
+
+    def do_graft(self):
+        self.chromate_cluster = self.attach_chromate()
+        self.done_graft = True
         return
 
     def load_cluster(self, file_path, file_type):
@@ -88,15 +97,15 @@ class Phillips():
 
         return axes
 
-    def attach_chromium(self, peripheral_oxygens, cluster=None, bond_cutoffs=None, bond_lengths=None,
+    def attach_chromium(self, peripheral_oxygens, cluster=None, bond_cutoffs=None, alkyl_bond_lengths=None,
             relax=True, OO_radius=None, max_iter=50):
 
         if cluster is None:
             cluster = self.cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
+        if alkyl_bond_lengths is None:
+            alkyl_bond_lengths = self.alkyl_bond_lengths
         if OO_radius is None:
             OO_radius = self.OO_radius
 
@@ -170,8 +179,8 @@ class Phillips():
         axes = self.get_axes(Atoms(atoms, coords), peripheral_oxygens)
 
         OO_dist = numpy.linalg.norm(coords[m] - coords[n])
-        if OO_dist < 2.0 * bond_lengths[('Cr', 'O')]:
-            Cr_coord = 0.5 * (coords[n] + coords[m]) + axes[2] * ((bond_lengths[('Cr', 'O')])**2.0 - (0.5 * OO_dist)**2.0)**0.5
+        if OO_dist < 2.0 * alkyl_bond_lengths[('Cr', 'O')]:
+            Cr_coord = 0.5 * (coords[n] + coords[m]) + axes[2] * ((alkyl_bond_lengths[('Cr', 'O')])**2.0 - (0.5 * OO_dist)**2.0)**0.5
         else:
             Cr_coord = 0.5 * (coords[n] + coords[m])
 
@@ -211,15 +220,15 @@ class Phillips():
 
         return axes, chromium_cluster
 
-    def attach_alkyl(self, alkyl_length, cluster=None, bond_cutoffs=None, bond_lengths=None, axes=None,
+    def attach_alkyl(self, alkyl_length, cluster=None, bond_cutoffs=None, alkyl_bond_lengths=None, axes=None,
             point_y=True, rotate_2=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
         if cluster is None:
             cluster = self.chromium_cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
+        if alkyl_bond_lengths is None:
+            alkyl_bond_lengths = self.alkyl_bond_lengths
         if axes is None:
             axes = self.axes
         if alkyl_radius is None:
@@ -246,15 +255,15 @@ class Phillips():
                     axes[2] * numpy.cos(numpy.pi*(1.5*109.5-180.0)/180.0) - axes[1] * numpy.sin(numpy.pi*(1.5*109.5-180.0)/180.0),
                     ]
 
-        C_coords = [coords[o] + tilts[0] * bond_lengths[('Cr', 'C')]]
+        C_coords = [coords[o] + tilts[0] * alkyl_bond_lengths[('Cr', 'C')]]
         for i in range(1, alkyl_length):
-            C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * bond_lengths[('C', 'C')])
+            C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * alkyl_bond_lengths[('C', 'C')])
         H_coords = []
         for i in range(0, alkyl_length):
             if i == alkyl_length-1:
-                H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * bond_lengths[('C', 'H')])
+                H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * alkyl_bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * alkyl_bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * alkyl_bond_lengths[('C', 'H')])
 
         if rotate_2:
             for i in range(2, alkyl_length):
@@ -323,6 +332,7 @@ class Phillips():
                     coords[i] = coords[n] + rotate_vector(coords[i] - coords[n], +axes[0], angle)
 
         if relax:
+
             if 'C' in atoms:
                 c = len(atoms)
                 for i, X in enumerate(atoms):
@@ -393,15 +403,15 @@ class Phillips():
 
         return alkyl_cluster
 
-    def attach_ethylene(self, cluster=None, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, axes=None,
+    def attach_ethylene(self, cluster=None, bond_cutoffs=None, alkyl_bond_lengths=None, ethylene_bond_lengths=None, axes=None,
             point_y=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
         if cluster is None:
             cluster = self.chromium_cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
+        if alkyl_bond_lengths is None:
+            alkyl_bond_lengths = self.alkyl_bond_lengths
         if ethylene_bond_lengths is None:
             ethylene_bond_lengths = self.ethylene_bond_lengths
         if axes is None:
@@ -427,10 +437,10 @@ class Phillips():
         C1_coord = coords[o] + tilt0 * ethylene_bond_lengths[('Cr', 'C')]
         C2_coord = C1_coord + tilt1 * ethylene_bond_lengths[('C', 'C')]
         C_coords = [C1_coord, C2_coord]
-        H1_coord = C1_coord + rotate_vector(tilt1, tilt0, -120.0) * bond_lengths[('C', 'H')]
-        H2_coord = C1_coord + rotate_vector(tilt1, tilt0, +120.0) * bond_lengths[('C', 'H')]
-        H3_coord = C2_coord + rotate_vector(tilt1, tilt0, -60.0) * bond_lengths[('C', 'H')]
-        H4_coord = C2_coord + rotate_vector(tilt1, tilt0, +60.0) * bond_lengths[('C', 'H')]
+        H1_coord = C1_coord + rotate_vector(tilt1, tilt0, -120.0) * alkyl_bond_lengths[('C', 'H')]
+        H2_coord = C1_coord + rotate_vector(tilt1, tilt0, +120.0) * alkyl_bond_lengths[('C', 'H')]
+        H3_coord = C2_coord + rotate_vector(tilt1, tilt0, -60.0) * alkyl_bond_lengths[('C', 'H')]
+        H4_coord = C2_coord + rotate_vector(tilt1, tilt0, +60.0) * alkyl_bond_lengths[('C', 'H')]
         H_coords = [H1_coord, H2_coord, H3_coord, H4_coord]
 
         if pucker > 0:
@@ -565,15 +575,15 @@ class Phillips():
         return ethylene_cluster
 
     def attach_transition_state(self, alkyl_length,
-            cluster=None, bond_cutoffs=None, bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None, axes=None,
+            cluster=None, bond_cutoffs=None, alkyl_bond_lengths=None, ethylene_bond_lengths=None, transition_state_lengths=None, axes=None,
             point_y=False, pucker=0, relax=True, alkyl_radius=None, max_iter=50):
 
         if cluster is None:
             cluster = self.chromium_cluster
         if bond_cutoffs is None:
             bond_cutoffs = self.bond_cutoffs
-        if bond_lengths is None:
-            bond_lengths = self.bond_lengths
+        if alkyl_bond_lengths is None:
+            alkyl_bond_lengths = self.alkyl_bond_lengths
         if ethylene_bond_lengths is None:
             ethylene_bond_lengths = self.ethylene_bond_lengths
         if transition_state_lengths is None:
@@ -608,13 +618,13 @@ class Phillips():
         C3_coord = C2_coord + tilts[0] * transition_state_lengths[('C2', 'C3')]
         C_coords = [C1_coord, C2_coord, C3_coord]
         for i in range(3, alkyl_length):
-            C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * bond_lengths[('C', 'C')])
+            C_coords.append(C_coords[-1] + tilts[i%len(tilts)] * alkyl_bond_lengths[('C', 'C')])
         H_coords = []
         for i in range(0, alkyl_length):
             if i == alkyl_length-1:
-                H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * bond_lengths[('C', 'H')])
-            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * bond_lengths[('C', 'H')])
+                H_coords.append(C_coords[-1] + tilts[(i+1)%len(tilts)] * alkyl_bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], +120.0) * alkyl_bond_lengths[('C', 'H')])
+            H_coords.append(C_coords[i] + rotate_vector(tilts[(i+1)%len(tilts)], -tilts[(i+0)%len(tilts)], -120.0) * alkyl_bond_lengths[('C', 'H')])
 
         for i in range(2, alkyl_length):
             C_coords[i] = C_coords[1] + rotate_vector(C_coords[i] - C_coords[1], -tilts[1], 180.0)
@@ -735,6 +745,134 @@ class Phillips():
 
         return transition_state_cluster
 
+    def attach_chromate(self, cluster=None, bond_cutoffs=None, chromyl_bond_lengths=None, axes=None,
+            pucker=0, relax=True, max_iter=50):
+
+        if cluster is None:
+            cluster = self.chromium_cluster
+        if bond_cutoffs is None:
+            bond_cutoffs = self.bond_cutoffs
+        if chromyl_bond_lengths is None:
+            chromyl_bond_lengths = self.chromyl_bond_lengths
+        if axes is None:
+            axes = self.axes
+
+        atoms = cluster.get_chemical_symbols()
+        coords = cluster.get_positions()
+        bonds = neighbor_list('ij', cluster, bond_cutoffs)
+
+        o = len(atoms)
+        for i, (X, coord) in enumerate(zip(atoms, coords)):
+            if X == 'Cr':
+                o = i
+                break
+
+        tilts = [
+                axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) + axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
+                axes[2] * numpy.cos(numpy.pi*0.5*109.5/180.0) - axes[1] * numpy.sin(numpy.pi*0.5*109.5/180.0),
+                ]
+
+        O_coords = [coords[o] + tilt * chromyl_bond_lengths[('Cr', 'O')] for tilt in tilts]
+
+        if pucker > 0:
+            Cr_neighbors = bonds[1][bonds[0] == o]
+            n = Cr_neighbors[0]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
+            angle = 15.0
+            for i in range(max_iter):
+                Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], angle)
+                CrO_dists = numpy.linalg.norm(coords[oxygens] - Cr_coord, axis=-1)
+                if numpy.amin(CrO_dists) > bond_cutoffs[('Cr', 'O')]:
+                    angle += 5.0
+                else:
+                    break
+                if angle > 45.0:
+                    angle = 45.0
+                    break
+            coords[o] = coords[n] + rotate_vector(coords[o] - coords[n], -axes[0], angle)
+            for i in range(2):
+                O_coords[i] = coords[n] + rotate_vector(O_coords[i] - coords[n], -axes[0], angle)
+
+        elif pucker < 0:
+            Cr_neighbors = bonds[1][bonds[0] == o]
+            n = Cr_neighbors[0]
+            oxygens = [i for i, X in enumerate(atoms) if X in ['O', 'F'] and i not in Cr_neighbors]
+            angle = 15.0
+            for i in range(max_iter):
+                Cr_coord = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], angle)
+                CrO_dists = numpy.linalg.norm(coords[oxygens] - Cr_coord, axis=-1)
+                if numpy.amin(CrO_dists) > bond_cutoffs[('Cr', 'O')]:
+                    angle += 5.0
+                else:
+                    break
+                if angle > 45.0:
+                    angle = 45.0
+                    break
+            coords[o] = coords[n] + rotate_vector(coords[o] - coords[n], +axes[0], angle)
+            for i in range(2):
+                O_coords[i] = coords[n] + rotate_vector(O_coords[i] - coords[n], +axes[0], angle)
+
+        if relax:
+
+            O1_nonneighbors = [i for i, X in enumerate(atoms) if i != o]
+            OX1_radii = []
+            for i in O1_nonneighbors:
+                if atoms[i] == 'Si':
+                    OX_bond_cutoff = bond_cutoffs[('Si', 'O')]
+                elif atoms[i] == 'O':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'O')]
+                elif atoms[i] == 'F':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'F')]
+                elif atoms[i] == 'H':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'H')]
+                OX1_radii.append([OX_bond_cutoff])
+            OX1_radii.append([bond_cutoffs[('O', 'O')]])
+            OX1_radii = numpy.array(OX1_radii)
+
+            O2_nonneighbors = [i for i, X in enumerate(atoms) if i != o]
+            OX2_radii = []
+            for i in O2_nonneighbors:
+                if atoms[i] == 'Si':
+                    OX_bond_cutoff = bond_cutoffs[('Si', 'O')]
+                elif atoms[i] == 'O':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'O')]
+                elif atoms[i] == 'F':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'F')]
+                elif atoms[i] == 'H':
+                    OX_bond_cutoff = bond_cutoffs[('O', 'H')]
+                OX2_radii.append([OX_bond_cutoff])
+            OX2_radii.append([bond_cutoffs[('O', 'O')]])
+            OX2_radii = numpy.array(OX2_radii)
+
+            status = -1
+            for i in range(max_iter):
+                if status == 0:
+                    break
+                else:
+                    status = 0
+                    new_coords = step_repulsive(O_coords[0][numpy.newaxis, :], coords[o], numpy.concatenate([coords[O1_nonneighbors], O_coords[1][numpy.newaxis, :]]), OX1_radii)
+                    if numpy.any(new_coords[0] != O_coords[0]):
+                        O_coords[0] = new_coords[0]
+                        status = -1
+                    new_coords = step_repulsive(O_coords[1][numpy.newaxis, :], coords[o], numpy.concatenate([coords[O2_nonneighbors], O_coords[0][numpy.newaxis, :]]), OX2_radii)
+                    if numpy.any(new_coords[0] != O_coords[1]):
+                        O_coords[1] = new_coords[0]
+                        status = -1
+
+        c = len(atoms)
+        chromate_atoms = []
+        chromate_coords = []
+        for i, (X, coord) in enumerate(zip(atoms, coords)):
+            chromate_atoms.append(X)
+            chromate_coords.append(coord)
+        for coord in O_coords:
+            chromate_atoms.append('O')
+            chromate_coords.append(coord)
+
+        chromate_cluster = Atoms(chromate_atoms, chromate_coords)
+
+        return chromate_cluster
+
     def save_clusters(self, file_path, file_type, labels=None, clusters=None):
         if labels is None:
             labels = []
@@ -748,6 +886,9 @@ class Phillips():
                         self.L_butyl_cluster, self.L_butyl_R_ethylene_cluster, self.LR_transition_state_cluster,
                         self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_state_cluster,
                         ]
+            if self.done_graft:
+                labels += ['silanol', 'chromate']
+                clusters += [self.cluster, self.chromate_cluster]
         for label, cluster in zip(labels, clusters):
             if not os.path.exists(file_path.format(label)):
                 write(file_path.format(label), cluster, file_type)
@@ -759,6 +900,7 @@ if __name__ == '__main__':
 
     clusters = Phillips('tests/A_0001.xyz', 'xyz', [2, 3])
     clusters.do_polymer()
+    clusters.do_graft()
     clusters.save_clusters('A_0001_{:s}.xyz', 'xyz')
 
 
