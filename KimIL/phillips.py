@@ -167,11 +167,11 @@ class Phillips():
                     if numpy.any(new_coords[0] != coords[n]) or numpy.any(new_coords[1] != coords[m]):
                         coords[n], coords[m] = new_coords[0], new_coords[1]
                         status = -1
-                    new_coords = step_repulsive([coords[n]], coords[p], coords[O1_nonneighbors], OX1_radii)
+                    new_coords = step_repulsive(coords[n][numpy.newaxis, :], coords[p], coords[O1_nonneighbors], OX1_radii)
                     if numpy.any(new_coords[0] != coords[n]):
                         coords[n] = new_coords[0]
                         status = -1
-                    new_coords = step_repulsive([coords[m]], coords[q], coords[O2_nonneighbors], OX2_radii)
+                    new_coords = step_repulsive(coords[m][numpy.newaxis, :], coords[q], coords[O2_nonneighbors], OX2_radii)
                     if numpy.any(new_coords[0] != coords[m]):
                         coords[m] = new_coords[0]
                         status = -1
@@ -850,11 +850,11 @@ class Phillips():
                     break
                 else:
                     status = 0
-                    new_coords = step_repulsive([O_coords[0]], coords[o], numpy.concatenate([coords[O1_nonneighbors], [O_coords[1]]]), OX1_radii)
+                    new_coords = step_repulsive(O_coords[0][numpy.newaxis, :], coords[o], numpy.concatenate([coords[O1_nonneighbors], O_coords[1][numpy.newaxis, :]]), OX1_radii)
                     if numpy.any(new_coords[0] != O_coords[0]):
                         O_coords[0] = new_coords[0]
                         status = -1
-                    new_coords = step_repulsive([O_coords[1]], coords[o], numpy.concatenate([coords[O2_nonneighbors], [O_coords[0]]]), OX2_radii)
+                    new_coords = step_repulsive(O_coords[1][numpy.newaxis, :], coords[o], numpy.concatenate([coords[O2_nonneighbors], O_coords[0][numpy.newaxis, :]]), OX2_radii)
                     if numpy.any(new_coords[0] != O_coords[1]):
                         O_coords[1] = new_coords[0]
                         status = -1
