@@ -887,7 +887,7 @@ class Phillips():
                         self.R_butyl_cluster, self.R_butyl_L_ethylene_cluster, self.RL_transition_state_cluster,
                         ]
             if self.done_graft:
-                labels += ['silanol', 'chromate']
+                labels += ['silanols', 'chromate']
                 clusters += [self.cluster, self.chromate_cluster]
         for label, cluster in zip(labels, clusters):
             if not os.path.exists(file_path.format(label)):
