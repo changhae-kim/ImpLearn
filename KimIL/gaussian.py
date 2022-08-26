@@ -11,7 +11,7 @@ class Gaussian():
 
     def __init__(self, catalyst_file_paths, reactant_file_paths, product_file_paths, transition_state_file_paths, prefix,
             file_type='xyz',
-            charges=[0, 0, 0, 0], mults=[4, 4, 4, 4],
+            charges=0, mults=4,
             temp=373.15, pressure=1.0,
             n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
@@ -26,8 +26,17 @@ class Gaussian():
         self.products = [self.load_cluster(file_path, file_type) for file_path in product_file_paths]
         self.transition_states = [self.load_cluster(file_path, file_type) for file_path in transition_state_file_paths]
         self.prefix = prefix
-        self.charges = charges
-        self.mults = mults
+
+        if isinstance(charges, int):
+            self.charges = [charges, charges, charges, charges]
+        else:
+            self.charges = charges
+
+        if isinstance(mults, int):
+            self.mults = [mults, mults, mults, mults]
+        else:
+            self.mults = mults
+
         self.temp = temp
         self.pressure = pressure
 
