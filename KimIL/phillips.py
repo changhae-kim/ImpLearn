@@ -202,7 +202,7 @@ class Phillips():
                     break
                 else:
                     status = 0
-                    new_coords = step_repulsive([Cr_coord], 0.5 * (coords[n] + coords[m]), coords[nonperipheral_oxygens], CrO_radii, axis=axes[0])
+                    new_coords = step_repulsive(Cr_coord[numpy.newaxis, :], 0.5 * (coords[n] + coords[m]), coords[nonperipheral_oxygens], CrO_radii, axis=axes[0])
                     if numpy.any(new_coords[0] != Cr_coord):
                         Cr_coord = new_coords[0]
                         status = -1
