@@ -87,12 +87,12 @@ def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False, right_han
     if pair_type == 'vicinal':
         permute0 = list(range(4))
         permute1 = [2, 3, 0, 1]
-        if not F_capped:
+        if not F_capping:
             permute0 += [i + 4 for i in permute0]
             permute1 += [i + 4 for i in permute1]
         permutes += [permute0, permute1]
         if not right_handed:
-            if F_capped:
+            if F_capping:
                 permutes += [list(reversed(permute)) for permute in permutes]
             else:
                 permutes += [list(reversed(permute[:4])) + list(reversed(permute[4:])) for permute in permutes]
@@ -112,14 +112,14 @@ def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False, right_han
         permute3a = [(j+1)%3+3 for j in range(m, m+3)]
         permute3b = [i%3 for i in range(n, n+3)]
         permute3 = permute3a + permute3b
-        if not F_capped:
+        if not F_capping:
             permute0 += [i + 6 for i in permute0]
             permute1 += [i + 6 for i in permute1]
             permute2 += [i + 6 for i in permute2]
             permute3 += [i + 6 for i in permute3]
             permutes += [permute0, permute1, permute2, permute3]
         if not right_handed:
-            if F_capped:
+            if F_capping:
                 permutes += [list(reversed(permute)) for permute in permutes]
             else:
                 permutes += [list(reversed(permute[:6])) + list(reversed(permute[6:])) for permute in permutes]
