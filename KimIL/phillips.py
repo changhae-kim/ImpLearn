@@ -20,7 +20,7 @@ class Phillips():
                 },
             alkyl_bond_lengths={('Cr', 'O'): 1.82, ('Cr', 'C'): 2.02, ('C', 'C'): 1.53, ('C', 'H'): 1.09},
             ethylene_bond_lengths={('Cr', 'C'): 2.49, ('C', 'C'): 1.34, ('C', 'H'): 1.09},
-            transition_state_lengths={('Cr', 'C1'): 2.08, ('C2', 'C3'): 2.24, ('C3', 'Cr'): 2.08},
+            transition_state_lengths={('Cr', 'C1'): 2.09, ('C1', 'C2'): 1.39, ('C2', 'C3'): 2.24, ('C3', 'Cr'): 2.08},
             chromyl_bond_lengths={('Cr', 'O'): 1.53, ('Cr', 'Cl'): 2.12},
             OO_radius=3.0,
             alkyl_radius=2.0
@@ -614,7 +614,7 @@ class Phillips():
                     ]
 
         C1_coord = coords[o] + tilts[0] * transition_state_lengths[('Cr', 'C1')]
-        C2_coord = C1_coord + tilts[1] * ethylene_bond_lengths[('C', 'C')]
+        C2_coord = C1_coord + tilts[1] * transition_state_lengths[('C1', 'C2')]
         C3_coord = C2_coord + tilts[0] * transition_state_lengths[('C2', 'C3')]
         C_coords = [C1_coord, C2_coord, C3_coord]
         for i in range(3, alkyl_length):
@@ -638,7 +638,7 @@ class Phillips():
 
         xaxis = numpy.array([1.0, 0.0])
         yaxis = numpy.array([0.0, 1.0])
-        ab = ethylene_bond_lengths[('C', 'C')] * xaxis
+        ab = transition_state_lengths[('C1', 'C2')] * xaxis
         bc = transition_state_lengths[('C2', 'C3')] * (xaxis * numpy.cos((180.0-109.5)/180.0*numpy.pi) + yaxis * numpy.sin((180.0-109.5)/180.0*numpy.pi))
         ac = ab + bc
         ph3 = numpy.arccos(numpy.dot(ab, ac)/(numpy.linalg.norm(ab)*numpy.linalg.norm(ac)))
