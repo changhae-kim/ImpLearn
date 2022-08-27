@@ -117,7 +117,7 @@ def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False, right_han
             permute1 += [i + 6 for i in permute1]
             permute2 += [i + 6 for i in permute2]
             permute3 += [i + 6 for i in permute3]
-            permutes += [permute0, permute1, permute2, permute3]
+        permutes += [permute0, permute1, permute2, permute3]
         if not right_handed:
             if F_capping:
                 permutes += [list(reversed(permute)) for permute in permutes]
