@@ -44,7 +44,21 @@ class Phillips():
 
     def do_polymer(self, alkyl_lengths=[4, 6], pucker=False):
 
-        if pucker:
+        if pucker == 2:
+
+            self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
+            self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
+                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=0, relax=False),
+                    point_y=False, pucker=+1, relax=True)
+            self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False, pucker=0)
+
+            self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=-1)
+            self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
+                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=0, relax=False),
+                    point_y=True, pucker=-1, relax=True)
+            self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=0)
+
+        elif pucker == True:
 
             self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
             self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
@@ -58,7 +72,7 @@ class Phillips():
                     point_y=True, pucker=-1, relax=True)
             self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=-1)
 
-        else:
+        elif pucker == False:
 
             self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True)
             self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
