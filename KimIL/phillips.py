@@ -44,46 +44,38 @@ class Phillips():
 
     def do_polymer(self, alkyl_lengths=[4, 6], pucker=False):
 
-        if pucker == 2:
-
-            self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
-            self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
-                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=0, relax=False),
-                    point_y=False, pucker=+1, relax=True)
-            self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False, pucker=0)
-
-            self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=-1)
-            self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
-                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=0, relax=False),
-                    point_y=True, pucker=-1, relax=True)
-            self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=0)
-
-        elif pucker == True:
-
-            self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
-            self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
-                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=0, relax=False),
-                    point_y=False, pucker=+1, relax=True)
-            self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False, pucker=+1)
-
-            self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=-1)
-            self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
-                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=0, relax=False),
-                    point_y=True, pucker=-1, relax=True)
-            self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=-1)
-
+        if pucker == True:
+            pucker = 'brt'
         elif pucker == False:
+            pucker = ''
 
+        if 'b' in pucker:
+            self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=+1)
+            self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=-1)
+        else:
             self.L_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=True)
+            self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False)
+
+        if 'r' in pucker:
+            self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
+                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, pucker=0, relax=False),
+                    point_y=False, pucker=+1, relax=True)
+            self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
+                    cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, pucker=0, relax=False),
+                    point_y=True, pucker=-1, relax=True)
+        else:
             self.L_butyl_R_ethylene_cluster = self.attach_ethylene(
                     cluster=self.attach_alkyl(alkyl_lengths[0], point_y=True, relax=False),
                     point_y=False, relax=True)
-            self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False)
-
-            self.R_butyl_cluster = self.attach_alkyl(alkyl_lengths[0], point_y=False)
             self.R_butyl_L_ethylene_cluster = self.attach_ethylene(
                     cluster=self.attach_alkyl(alkyl_lengths[0], point_y=False, relax=False),
                     point_y=True, relax=True)
+
+        if 't' in pucker:
+            self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False, pucker=+1)
+            self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True, pucker=-1)
+        else:
+            self.LR_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=False)
             self.RL_transition_state_cluster = self.attach_transition_state(alkyl_lengths[1], point_y=True)
 
         self.done_polymer = True
