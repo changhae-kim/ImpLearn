@@ -11,7 +11,7 @@ def check_normal_termination(file_path):
     f.close()
     if last_line.strip().startswith('Normal termination'):
         return True
-    elif last_line.strip().startswith('Error termination'):
+    elif last_line.strip().startswith('File lengths'):
         return False
     else:
         return 2
