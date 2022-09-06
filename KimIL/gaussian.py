@@ -291,11 +291,15 @@ class Gaussian():
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
         if os.path.exists('{:s}.log'.format(label)):
-            if check_normal_termination('{:s}.log'.format(label)):
+            status = check_normal_termination('{:s}.log'.format(label))
+            if status == True:
                 energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
                 return energies[-1], clusters[-1]
-            else:
+            elif status == False:
                 print(label, 'Error termination')
+                return
+            else:
+                print(label, 'Incomplete')
                 return
         else:
             print(label, 'No output')
@@ -321,15 +325,19 @@ class Gaussian():
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
         if os.path.exists('{:s}.log'.format(label)):
-            if check_normal_termination('{:s}.log'.format(label)):
+            status = check_normal_termination('{:s}.log'.format(label))
+            if status == True:
                 energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
                 if check_geometry(clusters[-1], self.transition_state_criteria):
                     return energies[-1], clusters[-1]
                 else:
                     print(label, 'Wrong transition state')
                     return
-            else:
+            elif status == False:
                 print(label, 'Error termination')
+                return
+            else:
+                print(label, 'Incomplete')
                 return
         else:
             print(label, 'No output')

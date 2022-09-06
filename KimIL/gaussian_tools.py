@@ -11,8 +11,10 @@ def check_normal_termination(file_path):
     f.close()
     if last_line.strip().startswith('Normal termination'):
         return True
-    else:
+    elif last_line.strip().startswith('Error termination'):
         return False
+    else:
+        return 2
 
 def check_geometry(cluster, criteria):
     status = True
