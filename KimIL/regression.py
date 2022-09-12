@@ -62,7 +62,7 @@ class Kernel():
             if self.y_norm in ['minmax', 'MinMax']:
                 self.y_scaler = MinMaxScaler()
             elif self.y_norm in ['standard', 'Standard']:
-                self.tearget_scaler = StandardScaler()
+                self.y_scaler = StandardScaler()
             self.y_scaler.fit(self.y_train[:, numpy.newaxis])
             self.y_train = self.y_scaler.transform(self.y_train[:, numpy.newaxis]).ravel()
 
