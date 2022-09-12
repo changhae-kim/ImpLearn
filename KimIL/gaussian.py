@@ -169,7 +169,7 @@ class Gaussian():
                 atom_type = 0
             body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
-        if self.basis in ['gen', 'Gen', 'GEN']:
+        if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
             footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
@@ -227,7 +227,7 @@ class Gaussian():
                 atom_type = 0
             body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
-        if self.basis in ['gen', 'Gen', 'GEN']:
+        if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
             footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
