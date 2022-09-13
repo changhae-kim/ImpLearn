@@ -62,7 +62,7 @@ def read_geometry_optimization(file_path):
     return energies, clusters
 
 def read_thermochem(file_path, temp=None, pressure=None,
-        elec=True, trans=False, rot=False, vib=True):
+        elec=True, trans=False, rot=False, vib=True, verbose=False):
 
     kB = 1.380649e-23 / 4.3597447222071e-18
     K = 6.62607015e-34 * 2.99792458e+8 / 1.380649e-23 * 100.0
@@ -130,9 +130,13 @@ def read_thermochem(file_path, temp=None, pressure=None,
 
     E = elec * E_e + trans * E_t + rot * E_r + vib * E_v
     S = elec * S_e + trans * S_t + rot * S_r + vib * S_v
-    G = E + kB * T - T * S
+    H = E + kB * T
+    G = H - T * S
 
-    return G
+    if verbose:
+        return E_e, H, S, G
+    else:
+        return G
 
 def read_thermochem_salman(file_path, new_constants=False):
 
