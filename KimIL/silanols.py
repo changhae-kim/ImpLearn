@@ -14,7 +14,7 @@ class Silanols():
             pbc=None,
             bond_cutoffs={('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
             viable_cutoff=4.5,
-            OH_bond_length=0.96,
+            OH_bond_length=0.956,
             exclude_waters=True,
             exclude_geminals=True,
             reorder_podals=True,
