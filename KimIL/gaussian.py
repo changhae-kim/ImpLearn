@@ -15,6 +15,7 @@ class Gaussian():
             temp=373.15, pressure=1.0,
             n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
+            preopt='wB97XD/3-21G',
             frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13],
             scan_params='B 16 17 S 10 0.1',
             scan_reverse=True,
@@ -40,7 +41,7 @@ class Gaussian():
         self.temp = temp
         self.pressure = pressure
 
-        self.set_parameters(n_proc, method, basis, gen_basis, frozen_atoms, scan_params, scan_reverse, transition_state_criteria)
+        self.set_parameters(n_proc, method, basis, gen_basis, preopt, frozen_atoms, scan_params, scan_reverse, transition_state_criteria)
 
         self.catalyst_optimizations = []
         self.reactant_optimizations = []
@@ -68,10 +69,10 @@ class Gaussian():
         return
 
     def load_cluster(self, file_path, file_type):
-        cluster = read(file_path, 0, file_type)
+        cluster = read(file_path, -1, file_type)
         return cluster
 
-    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_state_criteria=None):
+    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, preopt=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_state_criteria=None):
         if n_proc is not None:
             self.n_proc = n_proc
         if method is not None:
@@ -83,6 +84,8 @@ class Gaussian():
                 self.gen_basis = [gen_basis, gen_basis, gen_basis, gen_basis]
             else:
                 self.gen_basis = gen_basis
+        if preopt is not None:
+            self.preopt = preopt
         if frozen_atoms is not None:
             if isinstance(frozen_atoms[0], int):
                 self.frozen_atoms = [frozen_atoms, frozen_atoms, frozen_atoms, frozen_atoms]
@@ -154,23 +157,57 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        header = '''%NProcShared={n_proc:d}
+        if self.preopt:
+            header = '''%NProcShared={n_proc:d}
+%Chk = {basename:s}.chk
+#n {preopt:s} NoSymm SCF=XQC Opt=(Loose,MaxCycles=200)
+
+ {label:s}_preopt
+
+{charge:d} {mult:d}
+'''.format(n_proc=self.n_proc, basename=os.path.basename(label), preopt=self.preopt, label=label, charge=self.charges[state], mult=self.mults[state])
+            body = ''
+            for j, (X, coord) in enumerate(zip(atoms, coords)):
+                if j in self.frozen_atoms[state]:
+                    atom_type = -1
+                else:
+                    atom_type = 0
+                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+            footer = '''
+--Link1--
+%NProcShared={n_proc:d}
+%Chk = {basename:s}.chk
+%NoSave
+#n {method:s}/{basis:s} NoSymm Geom=(Check,AddGIC) SCF=XQC Opt=(MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
+
+ {label:s}
+
+{charge:d} {mult:d}
+
+!
+
+'''.format(n_proc=self.n_proc, basename=os.path.basename(label), method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
+            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+                footer += self.gen_basis[state] + '\n\n'
+
+        else:
+            header = '''%NProcShared={n_proc:d}
 #n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
 
  {label:s}
 
 {charge:d} {mult:d}
 '''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
-        body = ''
-        for j, (X, coord) in enumerate(zip(atoms, coords)):
-            if j in self.frozen_atoms[state]:
-                atom_type = -1
-            else:
-                atom_type = 0
-            body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
-        footer = '\n'
-        if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
-            footer += self.gen_basis[state] + '\n\n'
+            body = ''
+            for j, (X, coord) in enumerate(zip(atoms, coords)):
+                if j in self.frozen_atoms[state]:
+                    atom_type = -1
+                else:
+                    atom_type = 0
+                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+            footer = '\n'
+            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+                footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
             f = open('{:s}.com'.format(label), 'wt')
@@ -185,12 +222,12 @@ class Gaussian():
         coords = cluster.get_positions()
 
         header = '''%NProcShared={n_proc:d}
-#n PBEPBE/3-21G NoSymm SCF=XQC Opt=(ModRedundant,Loose,MaxCycles=200)
+#n {preopt:s} NoSymm SCF=XQC Opt=(ModRedundant,Loose,MaxCycles=200)
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, label=label, charge=self.charges[state], mult=self.mults[state])
+'''.format(n_proc=self.n_proc, preopt=self.preopt, label=label, charge=self.charges[state], mult=self.mults[state])
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms[state]:
@@ -212,23 +249,57 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        header = '''%NProcShared={n_proc:d}
+        if self.preopt:
+            header = '''%NProcShared={n_proc:d}
+%Chk = {basename:s}.chk
+#n {preopt:s} NoSymm SCF=XQC Opt=(Loose,TS,NoEigen,CalcFC,MaxCycles=200)
+
+ {label:s}_preopt
+
+{charge:d} {mult:d}
+'''.format(n_proc=self.n_proc, basename=os.path.basename(label), preopt=self.preopt, label=label, charge=self.charges[state], mult=self.mults[state])
+            body = ''
+            for j, (X, coord) in enumerate(zip(atoms, coords)):
+                if j in self.frozen_atoms[state]:
+                    atom_type = -1
+                else:
+                    atom_type = 0
+                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+            footer = '''
+--Link1--
+%NProcShared={n_proc:d}
+%Chk = {basename:s}.chk
+%NoSave
+#n {method:s}/{basis:s} NoSymm Geom=(Check,AddGIC) SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
+
+ {label:s}
+
+{charge:d} {mult:d}
+
+!
+
+'''.format(n_proc=self.n_proc, basename=os.path.basename(label), method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
+            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+                footer += self.gen_basis[state] + '\n\n'
+
+        else:
+            header = '''%NProcShared={n_proc:d}
 #n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
 
  {label:s}
 
 {charge:d} {mult:d}
 '''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
-        body = ''
-        for j, (X, coord) in enumerate(zip(atoms, coords)):
-            if j in self.frozen_atoms[state]:
-                atom_type = -1
-            else:
-                atom_type = 0
-            body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
-        footer = '\n'
-        if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
-            footer += self.gen_basis[state] + '\n\n'
+            body = ''
+            for j, (X, coord) in enumerate(zip(atoms, coords)):
+                if j in self.frozen_atoms[state]:
+                    atom_type = -1
+                else:
+                    atom_type = 0
+                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+            footer = '\n'
+            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+                footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
             f = open('{:s}.com'.format(label), 'wt')
