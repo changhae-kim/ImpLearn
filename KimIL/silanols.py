@@ -5,15 +5,15 @@ from ase.io import read, write
 from ase.neighborlist import neighbor_list
 from matplotlib import pyplot
 
-from .silanols_tools import reorder_podal_oxygens
+from silanols_tools import reorder_podal_oxygens
 
 
 class Silanols():
 
     def __init__(self, file_path, file_type,
             pbc=None,
-            bond_cutoffs={('Si', 'Si'): 2.0, ('O', 'O'): 2.0, ('Si', 'O'): 2.3, ('O', 'H'): 1.2},
-            viable_cutoff=4.5,
+            bond_cutoffs={('Si', 'O'): 2.3, ('O', 'H'): 1.2},
+            viable_cutoff=4.2,
             OH_bond_length=0.956,
             exclude_waters=True,
             exclude_geminals=True,
@@ -237,10 +237,10 @@ class Silanols():
                     reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], cluster_coords[m-1])
                 else:
                     reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
-                old_podals = podal_oxygens
                 old_coords = cluster_coords
-                podal_oxygens = []
+                old_podals = podal_oxygens
                 cluster_coords = []
+                podal_oxygens = []
                 for coord in old_coords[:p]:
                     cluster_coords.append(coord)
                 for i in reordered:
@@ -255,12 +255,12 @@ class Silanols():
                     cluster_atoms[m + n] = 'F'
 
             else:
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
                 podal_hydrogens = []
                 for n, i in enumerate(podal_oxygens):
                     i_neighbors = bonds[1][bonds[0] == i]
                     for j in i_neighbors:
                         if atoms[j] == 'Si' and j not in chasis_silicons:
-                            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
                             podal_hydrogens.append(j)
                             cluster_atoms.append('H')
                             axis = slab.get_distance(i, j, mic=True, vector=True)
@@ -272,7 +272,7 @@ class Silanols():
 
         return minimal_clusters
 
-    def analyze_bonds (self, slab=None, bond_cutoffs=None):
+    def analyze_bonds(self, slab=None, bond_cutoffs=None):
 
         if slab is None:
             slab = self.slab

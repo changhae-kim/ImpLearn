@@ -80,7 +80,7 @@ def reorder_podal_oxygens(podal_coords, O1_coord, O2_coord, Si1_coord, Si2_coord
 
     return reordered
 
-def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False, right_handed=True):
+def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False):
 
     permutes = []
 
@@ -91,11 +91,6 @@ def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False, right_han
             permute0 += [i + 4 for i in permute0]
             permute1 += [i + 4 for i in permute1]
         permutes += [permute0, permute1]
-        if not right_handed:
-            if F_capping:
-                permutes += [list(reversed(permute)) for permute in permutes]
-            else:
-                permutes += [list(reversed(permute[:4])) + list(reversed(permute[4:])) for permute in permutes]
 
     elif pair_type == 'nonvicinal':
         permute0 = list(range(6))
@@ -118,11 +113,6 @@ def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False, right_han
             permute2 += [i + 6 for i in permute2]
             permute3 += [i + 6 for i in permute3]
         permutes += [permute0, permute1, permute2, permute3]
-        if not right_handed:
-            if F_capping:
-                permutes += [list(reversed(permute)) for permute in permutes]
-            else:
-                permutes += [list(reversed(permute[:6])) + list(reversed(permute[6:])) for permute in permutes]
 
     return permutes
 
