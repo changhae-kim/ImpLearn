@@ -25,7 +25,7 @@ def check_geometry(cluster, criteria):
             break
     return status
 
-def read_geometry_optimization(file_path):
+def read_geom_opt(file_path):
     f = open(file_path, 'rt')
     n_cycles = 0
     energies = []
