@@ -5,7 +5,7 @@ from ase.io import read, write
 from ase.neighborlist import neighbor_list
 from matplotlib import pyplot
 
-from silanols_tools import reorder_podal_oxygens
+from .silanols_tools import reorder_podal_oxygens
 
 
 class Silanols():
