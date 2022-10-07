@@ -40,7 +40,7 @@ def read_geom_opt(file_path):
             elif line.strip().startswith('SCF Done:'):
                 n_cycles += 1
                 energy = float(line.split()[4])
-            elif line.strip().startswith('!   Optimized Parameters   !') or line.strip().startswith('! Non-Optimized Parameters !'):
+            elif line.strip().startswith('!   Optimized Parameters   !') or (line.strip().startswith('Normal termination') and energies == []):
                 energies.append(energy)
                 clusters.append(Atoms(atoms, coords))
         elif status == 1:
