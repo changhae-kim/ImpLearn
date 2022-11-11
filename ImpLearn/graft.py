@@ -54,10 +54,9 @@ class MatchCoords():
 
 class Graft():
 
-    def __init__(self, input_file_path, ref_file_path,
+    def __init__(self, input_cluster, ref_cluster,
             podal_atoms=None, input_podal_atoms=None, ref_podal_atoms=None,
-            match_atoms=None, input_match_atoms=None, ref_match_atoms=None,
-            input_file_type='xyz', ref_file_type='gaussian-out'
+            match_atoms=None, input_match_atoms=None, ref_match_atoms=None
             ):
 
         if input_podal_atoms is None:
@@ -83,14 +82,10 @@ class Graft():
         self.input_match_atoms = input_match_atoms
         self.ref_match_atoms = ref_match_atoms
 
-        self.input_cluster = self.load_cluster(input_file_path, input_file_type)
-        self.ref_cluster = self.load_cluster(ref_file_path, ref_file_type)
+        self.input_cluster = input_cluster
+        self.ref_cluster = ref_cluster
 
         return
-
-    def load_cluster(self, file_path, file_type):
-        cluster = read(file_path, -1, file_type)
-        return cluster
 
     def run(self):
 

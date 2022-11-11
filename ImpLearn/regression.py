@@ -50,7 +50,7 @@ class Kernel():
         self.X_train = X
         self.y_train = y
 
-        if self.X_norm:
+        if self.X_norm is not None:
             if self.X_norm in ['minmax', 'MinMax']:
                 self.X_scaler = MinMaxScaler()
             elif self.X_norm in ['standard', 'Standard']:
@@ -58,7 +58,7 @@ class Kernel():
             self.X_scaler.fit(self.X_train)
             self.X_train = self.X_scaler.transform(self.X_train)
 
-        if self.y_norm:
+        if self.y_norm is not None:
             if self.y_norm in ['minmax', 'MinMax']:
                 self.y_scaler = MinMaxScaler()
             elif self.y_norm in ['standard', 'Standard']:
