@@ -74,7 +74,7 @@ class Kernel():
         return
 
     def predict(self, X):
-        if self.X_norm:
+        if self.X_norm is not None:
             X = self.X_scaler.transform(X)
         dX = X[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
         dX2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
@@ -83,6 +83,12 @@ class Kernel():
         if self.y_norm:
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
         return y
+
+    def loss(self, X, y):
+        y_pred = self.predict(X)
+        y_diff = y - y_pred
+        y_err = numpy.sqrt(numpy.sum(y_diff*y_diff))
+        return y_err
 
 
 if __name__ == '__main__':
