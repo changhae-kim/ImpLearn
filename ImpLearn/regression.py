@@ -43,6 +43,9 @@ class Kernel():
         self.regularizer = regularizer
         self.alpha = alpha
         self.random_state = random_state
+        self.X_train = None
+        self.y_train = None
+        self.matrix = None
         return
 
     def fit(self, X, y, verbose=False):
@@ -84,11 +87,23 @@ class Kernel():
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
         return y
 
-    def loss(self, X, y):
-        y_pred = self.predict(X)
-        y_diff = y - y_pred
-        y_err = numpy.sqrt(numpy.mean(y_diff*y_diff))
+    def losses(self, X, y):
+        if self.X_norm is not None:
+            X = self.X_scaler.transform(X)
+        dX = X[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
+        dX2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
+        numpy.fill_diagonal(dX2, numpy.inf)
+        softmax = numpy.exp( -dX2 - logsumexp(-dX2, axis=1)[:, numpy.newaxis] )
+        y_pred = numpy.einsum('ij,j->i', softmax, self.y_train)
+        if self.y_norm is not None:
+            y_pred = self.y_scaler.inverse_transform(y_pred[:, numpy.newaxis]).ravel()
+        y_err = y - y_pred
         return y_err
+
+    def loss(self, X, y):
+        y_err = self.losses(X, y)
+        err = numpy.sqrt(numpy.mean(y_err*y_err))
+        return err
 
 
 if __name__ == '__main__':
