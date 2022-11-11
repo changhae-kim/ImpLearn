@@ -87,7 +87,7 @@ class Kernel():
     def loss(self, X, y):
         y_pred = self.predict(X)
         y_diff = y - y_pred
-        y_err = numpy.sqrt(numpy.sum(y_diff*y_diff))
+        y_err = numpy.sqrt(numpy.mean(y_diff*y_diff))
         return y_err
 
 
