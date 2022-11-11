@@ -80,7 +80,7 @@ class Kernel():
         dX2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
         softmax = numpy.exp( -dX2 - logsumexp(-dX2, axis=1)[:, numpy.newaxis] )
         y = numpy.einsum('ij,j->i', softmax, self.y_train)
-        if self.y_norm:
+        if self.y_norm is not None:
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
         return y
 
