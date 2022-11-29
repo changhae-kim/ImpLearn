@@ -4,7 +4,7 @@ import os
 from ase import Atoms
 from ase.io import read
 
-from .gaussian_tools import check_normal_termination, read_geometry_optimization, read_thermochem, check_geometry
+from .gaussian_tools import check_normal_termination, read_geom_opt, read_thermochem, check_geometry
 
 
 class Gaussian():
@@ -364,7 +364,7 @@ class Gaussian():
         if os.path.exists('{:s}.log'.format(label)):
             status = check_normal_termination('{:s}.log'.format(label))
             if status == True:
-                energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+                energies, clusters = read_geom_opt('{:s}.log'.format(label))
                 return energies[-1], clusters[-1]
             elif status == False:
                 print(label, 'Error termination')
@@ -383,7 +383,7 @@ class Gaussian():
                 os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
 
         if os.path.exists('{:s}.log'.format(label)):
-            energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+            energies, clusters = read_geom_opt('{:s}.log'.format(label))
             return energies, clusters
         else:
             print(label, 'No output')
@@ -398,7 +398,7 @@ class Gaussian():
         if os.path.exists('{:s}.log'.format(label)):
             status = check_normal_termination('{:s}.log'.format(label))
             if status == True:
-                energies, clusters = read_geometry_optimization('{:s}.log'.format(label))
+                energies, clusters = read_geom_opt('{:s}.log'.format(label))
                 if check_geometry(clusters[-1], self.transition_state_criteria):
                     return energies[-1], clusters[-1]
                 else:
