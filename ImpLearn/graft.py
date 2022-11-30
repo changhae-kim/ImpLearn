@@ -56,7 +56,8 @@ class Graft():
 
     def __init__(self, input_cluster, ref_cluster,
             podal_atoms=None, input_podal_atoms=None, ref_podal_atoms=None,
-            match_atoms=None, input_match_atoms=None, ref_match_atoms=None
+            match_atoms=None, input_match_atoms=None, ref_match_atoms=None,
+            params=None
             ):
 
         if input_podal_atoms is None:
@@ -82,6 +83,8 @@ class Graft():
         self.input_match_atoms = input_match_atoms
         self.ref_match_atoms = ref_match_atoms
 
+        self.params=params
+
         self.input_cluster = input_cluster
         self.ref_cluster = ref_cluster
 
@@ -94,7 +97,7 @@ class Graft():
         ref_atoms = self.ref_cluster.get_chemical_symbols()
         ref_coords = self.ref_cluster.get_positions()
 
-        match = MatchCoords(ref_coords[self.ref_match_atoms], input_coords[self.input_match_atoms])
+        match = MatchCoords(ref_coords[self.ref_match_atoms], input_coords[self.input_match_atoms], params=self.params)
         match.fit()
 
         output_atoms = ref_atoms
