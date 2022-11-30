@@ -41,6 +41,16 @@ class Gaussian():
         self.temp = temp
         self.pressure = pressure
 
+        self.n_proc = None
+        self.method = None
+        self.basis = None
+        self.gen_basis = None
+        self.preopt = None
+        self.frozen_atoms = None
+        self.scan_params = None
+        self.scan_reverse = None
+        self.transition_state_criteria = None
+
         self.set_parameters(n_proc, method, basis, gen_basis, preopt, frozen_atoms, scan_params, scan_reverse, transition_state_criteria)
 
         self.catalyst_optimizations = []
@@ -157,7 +167,7 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        if self.preopt:
+        if self.preopt is not None:
             header = '''%NProcShared={n_proc:d}
 %Chk = {basename:s}.chk
 #n {preopt:s} NoSymm SCF=XQC Opt=(Loose,MaxCycles=200)
@@ -172,7 +182,7 @@ class Gaussian():
                     atom_type = -1
                 else:
                     atom_type = 0
-                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+                body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '''
 --Link1--
 %NProcShared={n_proc:d}
@@ -204,7 +214,7 @@ class Gaussian():
                     atom_type = -1
                 else:
                     atom_type = 0
-                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+                body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '\n'
             if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
@@ -234,7 +244,7 @@ class Gaussian():
                 atom_type = -1
             else:
                 atom_type = 0
-            body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+            body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n{:s}\n\n'.format(self.scan_params)
 
         if not os.path.exists('{:s}.com'.format(label)):
@@ -249,7 +259,7 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
-        if self.preopt:
+        if self.preopt is not None:
             header = '''%NProcShared={n_proc:d}
 %Chk = {basename:s}.chk
 #n {preopt:s} NoSymm SCF=XQC Opt=(Loose,TS,NoEigen,CalcFC,MaxCycles=200)
@@ -264,7 +274,7 @@ class Gaussian():
                     atom_type = -1
                 else:
                     atom_type = 0
-                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+                body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '''
 --Link1--
 %NProcShared={n_proc:d}
@@ -296,7 +306,7 @@ class Gaussian():
                     atom_type = -1
                 else:
                     atom_type = 0
-                body += '{X:s} {t:d} {x:f} {y:f} {z:f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+                body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '\n'
             if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
