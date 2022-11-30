@@ -262,7 +262,7 @@ class Gaussian():
         if self.preopt is not None:
             header = '''%NProcShared={n_proc:d}
 %Chk = {basename:s}.chk
-#n {preopt:s} NoSymm SCF=XQC Opt=(Loose,TS,NoEigen,CalcFC,MaxCycles=200)
+#n {preopt:s} NoSymm SCF=XQC Opt=(Loose,TS,CalcFC,NoEigen,MaxCycles=200)
 
  {label:s}_preopt
 
@@ -280,7 +280,7 @@ class Gaussian():
 %NProcShared={n_proc:d}
 %Chk = {basename:s}.chk
 %NoSave
-#n {method:s}/{basis:s} NoSymm Geom=(Check,AddGIC) SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
+#n {method:s}/{basis:s} NoSymm Geom=(Check,AddGIC) SCF=XQC Opt=(TS,CalcFC,NoEigen,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
 
  {label:s}
 
@@ -294,7 +294,7 @@ class Gaussian():
 
         else:
             header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,NoEigen,CalcFC,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
+#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,CalcFC,NoEigen,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
 
  {label:s}
 
