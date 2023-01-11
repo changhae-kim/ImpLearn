@@ -133,7 +133,7 @@ class Kernel():
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
         return y
 
-    def errors(self):
+    def predict_loo(self):
         X = self.X_train
         y = self.y_train
         dX = X[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
@@ -144,6 +144,13 @@ class Kernel():
         if self.y_norm is not None:
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
             y_pred = self.y_scaler.inverse_transform(y_pred[:, numpy.newaxis]).ravel()
+        return y_pred
+
+    def errors(self):
+        y = self.y_train
+        if self.y_norm is not None:
+            y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
+        y_pred = self.predict_loo()
         y_err = y - y_pred
         return y_err
 
