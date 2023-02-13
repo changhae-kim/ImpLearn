@@ -19,7 +19,8 @@ class Gaussian():
             frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13],
             scan_params='B 16 17 S 10 0.1',
             scan_reverse=True,
-            transition_state_criteria={(0, 14): (1.9, 2.4), (0, 16): (1.9, 2.4), (15, 16): (1.9, 2.4)}
+            transition_state_criteria={(0, 14): (1.9, 2.4), (0, 16): (1.9, 2.4), (15, 16): (1.9, 2.4)},
+            freq_cutoff=0.0
             ):
 
         self.catalysts = [self.load_cluster(file_path, file_type) for file_path in catalyst_file_paths]
@@ -50,8 +51,9 @@ class Gaussian():
         self.scan_params = None
         self.scan_reverse = None
         self.transition_state_criteria = None
+        self.freq_cutoff = None
 
-        self.set_parameters(n_proc, method, basis, gen_basis, preopt, frozen_atoms, scan_params, scan_reverse, transition_state_criteria)
+        self.set_parameters(n_proc, method, basis, gen_basis, preopt, frozen_atoms, scan_params, scan_reverse, transition_state_criteria, freq_cutoff)
 
         self.catalyst_optimizations = []
         self.reactant_optimizations = []
@@ -64,6 +66,16 @@ class Gaussian():
         self.product_energies = []
         self.scan_energies = []
         self.transition_state_energies = []
+
+        self.catalyst_enthalpies = []
+        self.reactant_enthalpies = []
+        self.product_enthalpies = []
+        self.transition_state_enthalpies = []
+
+        self.catalyst_entropies = []
+        self.reactant_entropies = []
+        self.product_entropies = []
+        self.transition_state_entropies = []
 
         self.catalyst_gibbs_energies = []
         self.reactant_gibbs_energies = []
@@ -82,7 +94,7 @@ class Gaussian():
         cluster = read(file_path, -1, file_type)
         return cluster
 
-    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, preopt=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_state_criteria=None):
+    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, preopt=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_state_criteria=None, freq_cutoff=None):
         if n_proc is not None:
             self.n_proc = n_proc
         if method is not None:
@@ -107,6 +119,8 @@ class Gaussian():
             self.scan_reverse = scan_reverse
         if transition_state_criteria is not None:
             self.transition_state_criteria = transition_state_criteria
+        if freq_cutoff is not None:
+            self.freq_cutoff = freq_cutoff
         return
 
     def setup(self, prefix=None):
@@ -197,7 +211,7 @@ class Gaussian():
 !
 
 '''.format(n_proc=self.n_proc, basename=os.path.basename(label), method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
-            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+            if upper(self.basis) in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         else:
@@ -216,7 +230,7 @@ class Gaussian():
                     atom_type = 0
                 body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '\n'
-            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+            if upper(self.basis) in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
@@ -289,7 +303,7 @@ class Gaussian():
 !
 
 '''.format(n_proc=self.n_proc, basename=os.path.basename(label), method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
-            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+            if upper(self.basis) in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         else:
@@ -308,7 +322,7 @@ class Gaussian():
                     atom_type = 0
                 body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '\n'
-            if self.basis in ['gen', 'Gen', 'GEN', 'genecp', 'GenECP', 'GENECP']:
+            if upper(self.basis) in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
@@ -318,10 +332,7 @@ class Gaussian():
 
         return
 
-    def run(self, prefix=None, dry_run=False):
-
-        if prefix is None:
-            prefix = self.prefix
+    def run(self, dry_run=False):
 
         if self.catalyst_energies == []:
             for label in self.catalyst_optimizations:
@@ -426,65 +437,127 @@ class Gaussian():
 
         return
 
-    def get_gibbs_energies(self, prefix=None, temp=None, pressure=None):
+    def get_thermodynamics(self, temp=None, pressure=None, freq_cutoff=None):
 
-        if prefix is None:
-            prefix = self.prefix
+        if temp is None:
+            temp = self.temp
+        elif temp != self.temp:
+            self.temp = temp
+
+        if pressure is None:
+            pressure = self.pressure
+        elif pressure != self.pressure:
+            self.pressure = pressure
+
+        if freq_cutoff is None:
+            freq_cutoff = self.freq_cutoff
+        elif freq_cutoff != self.freq_cutoff:
+            self.freq_cutoff = freq_cutoff
+
+        self.catalyst_gibbs_energies = []
+        self.catalyst_enthalpies = []
+        self.catalyst_entropies = []
+        for label in self.catalyst_optimizations:
+            E_e, H, S, G = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure, freq_cutoff=self.freq_cutoff, verbose=True)
+            self.catalyst_gibbs_energies.append(G)
+            self.catalyst_enthalpies.append(H)
+            self.catalyst_entropies.append(S)
+
+        self.reactant_gibbs_energies = []
+        self.reactant_enthalpies = []
+        self.reactant_entropies = []
+        for label in self.reactant_optimizations:
+            E_e, H, S, G = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure, freq_cutoff=self.freq_cutoff, verbose=True)
+            self.reactant_gibbs_energies.append(G)
+            self.reactant_enthalpies.append(H)
+            self.reactant_entropies.append(S)
+
+        self.product_gibbs_energies = []
+        self.product_enthalpies = []
+        self.product_entropies = []
+        for label in self.product_optimizations:
+            E_e, H, S, G = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure, freq_cutoff=self.freq_cutoff, verbose=True)
+            self.product_gibbs_energies.append(G)
+            self.product_enthalpies.append(H)
+            self.product_entropies.append(S)
+
+        self.transition_state_gibbs_energies = []
+        self.transition_state_enthalpies = []
+        self.transition_state_entropies = []
+        for label in self.transition_state_optimizations:
+            E_e, H, S, G = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure, freq_cutoff=self.freq_cutoff, verbose=True)
+            self.transition_state_gibbs_energies.append(G)
+            self.transition_state_enthalpies.append(H)
+            self.transition_state_entropies.append(S)
+
+        return
+
+
+    def get_gibbs_energies(self, temp=None, pressure=None, freq_cutoff=None):
+
         if temp is None:
             temp = self.temp
         if pressure is None:
             pressure = self.pressure
+        if freq_cutoff is None:
+            freq_cutoff = self.freq_cutoff
 
-        if self.catalyst_gibbs_energies == []:
-            for label in self.catalyst_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                self.catalyst_gibbs_energies.append(gibbs_energy)
+        if self.catalyst_gibbs_energies == [] or self.reactant_gibbs_energies == [] or self.product_gibbs_energies == [] or self.transition_state_gibbs_energies == []:
+            self.get_thermodynamics(temp, pressure, freq_cutoff)
 
-        if self.reactant_gibbs_energies == []:
-            for label in self.reactant_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                self.reactant_gibbs_energies.append(gibbs_energy)
+        if temp != self.temp or pressure != self.pressure or freq_cutoff != self.freq_cutoff:
+            self.get_thermodynamics(temp, pressure, freq_cutoff)
 
-        if self.product_gibbs_energies == []:
-            for label in self.product_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                self.product_gibbs_energies.append(gibbs_energy)
-
-        if self.transition_state_gibbs_energies == []:
-            for label in self.transition_state_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                self.transition_state_gibbs_energies.append(gibbs_energy)
-
-        if temp != self.temp or pressure != self.pressure:
-
-            catalyst_gibbs_energies = []
-            for label in self.catalyst_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                catalyst_gibbs_energies.append(gibbs_energy)
-
-            reactant_gibbs_energies = []
-            for label in self.reactant_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                reactant_gibbs_energies.append(gibbs_energy)
-
-            product_gibbs_energies = []
-            for label in self.product_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                product_gibbs_energies.append(gibbs_energy)
-
-            transition_state_gibbs_energies = []
-            for label in self.transition_state_optimizations:
-                gibbs_energy = read_thermochem('{:s}.log'.format(label), temp=self.temp, pressure=self.pressure)
-                transition_state_gibbs_energies.append(gibbs_energy)
-
-        else:
-
-            catalyst_gibbs_energies = self.catalyst_gibbs_energies
-            reactant_gibbs_energies = self.reactant_gibbs_energies
-            product_gibbs_energies = self.product_gibbs_energies
-            transition_state_gibbs_energies = self.transition_state_gibbs_energies
+        catalyst_gibbs_energies = self.catalyst_gibbs_energies
+        reactant_gibbs_energies = self.reactant_gibbs_energies
+        product_gibbs_energies = self.product_gibbs_energies
+        transition_state_gibbs_energies = self.transition_state_gibbs_energies
 
         return catalyst_gibbs_energies, reactant_gibbs_energies, product_gibbs_energies, transition_state_gibbs_energies
+
+    def get_enthalpies(self, temp=None, pressure=None, freq_cutoff=None):
+
+        if temp is None:
+            temp = self.temp
+        if pressure is None:
+            pressure = self.pressure
+        if freq_cutoff is None:
+            freq_cutoff = self.freq_cutoff
+
+        if self.catalyst_enthalpies == [] or self.reactant_enthalpies == [] or self.product_enthalpies == [] or self.transition_state_enthalpies == []:
+            self.get_thermodynamics(temp, pressure, freq_cutoff)
+
+        if temp != self.temp or pressure != self.pressure or freq_cutoff != self.freq_cutoff:
+            self.get_thermodynamics(temp, pressure, freq_cutoff)
+
+        catalyst_enthalpies = self.catalyst_enthalpies
+        reactant_enthalpies = self.reactant_enthalpies
+        product_enthalpies = self.product_enthalpies
+        transition_state_enthalpies = self.transition_state_enthalpies
+
+        return catalyst_enthalpies, reactant_enthalpies, product_enthalpies, transition_state_enthalpies
+
+    def get_entropies(self, temp=None, pressure=None, freq_cutoff=None):
+
+        if temp is None:
+            temp = self.temp
+        if pressure is None:
+            pressure = self.pressure
+        if freq_cutoff is None:
+            freq_cutoff = self.freq_cutoff
+
+        if self.catalyst_entropies == [] or self.reactant_entropies == [] or self.product_entropies == [] or self.transition_state_entropies == []:
+            self.get_thermodynamics(temp, pressure, freq_cutoff)
+
+        if temp != self.temp or pressure != self.pressure or freq_cutoff != self.freq_cutoff:
+            self.get_thermodynamics(temp, pressure, freq_cutoff)
+
+        catalyst_entropies = self.catalyst_entropies
+        reactant_entropies = self.reactant_entropies
+        product_entropies = self.product_entropies
+        transition_state_entropies = self.transition_state_entropies
+
+        return catalyst_entropies, reactant_entropies, product_entropies, transition_state_entropies
 
 
 if __name__ == '__main__':
