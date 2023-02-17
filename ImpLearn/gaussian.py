@@ -17,8 +17,6 @@ class Gaussian():
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****',
             preopt='wB97XD/3-21G',
             frozen_atoms=[6, 7, 8, 9, 10, 11, 12, 13],
-            scan_params='B 16 17 S 10 0.1',
-            scan_reverse=True,
             transition_state_criteria={(0, 14): (1.9, 2.4), (0, 16): (1.9, 2.4), (15, 16): (1.9, 2.4)},
             freq_cutoff=0.0
             ):
@@ -48,23 +46,19 @@ class Gaussian():
         self.gen_basis = None
         self.preopt = None
         self.frozen_atoms = None
-        self.scan_params = None
-        self.scan_reverse = None
         self.transition_state_criteria = None
         self.freq_cutoff = None
 
-        self.set_parameters(n_proc, method, basis, gen_basis, preopt, frozen_atoms, scan_params, scan_reverse, transition_state_criteria, freq_cutoff)
+        self.set_parameters(n_proc, method, basis, gen_basis, preopt, frozen_atoms, transition_state_criteria, freq_cutoff)
 
         self.catalyst_optimizations = []
         self.reactant_optimizations = []
         self.product_optimizations = []
-        self.scans = []
         self.transition_state_optimizations = []
 
         self.catalyst_energies = []
         self.reactant_energies = []
         self.product_energies = []
-        self.scan_energies = []
         self.transition_state_energies = []
 
         self.catalyst_enthalpies = []
@@ -85,7 +79,6 @@ class Gaussian():
         self.catalyst_clusters = []
         self.reactant_clusters = []
         self.product_clusters = []
-        self.scan_clusters = []
         self.transition_state_clusters = []
 
         return
@@ -94,7 +87,7 @@ class Gaussian():
         cluster = read(file_path, -1, file_type)
         return cluster
 
-    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, preopt=None, frozen_atoms=None, scan_params=None, scan_reverse=None, transition_state_criteria=None, freq_cutoff=None):
+    def set_parameters(self, n_proc=None, method=None, basis=None, gen_basis=None, preopt=None, frozen_atoms=None, transition_state_criteria=None, freq_cutoff=None):
         if n_proc is not None:
             self.n_proc = n_proc
         if method is not None:
@@ -113,10 +106,6 @@ class Gaussian():
                 self.frozen_atoms = [frozen_atoms, frozen_atoms, frozen_atoms, frozen_atoms]
             else:
                 self.frozen_atoms = frozen_atoms
-        if scan_params is not None:
-            self.scan_params = scan_params
-        if scan_reverse is not None:
-            self.scan_reverse = scan_reverse
         if transition_state_criteria is not None:
             self.transition_state_criteria = transition_state_criteria
         if freq_cutoff is not None:
@@ -146,33 +135,11 @@ class Gaussian():
                 self.product_optimizations.append(label)
                 self.setup_geometry_optimization(label, cluster, 2)
 
-        if self.transition_states == []:
-
-            if self.scan_energies != [] and self.transition_state_optimizations == []:
-                for i, (scan_energies, scan_clusters) in enumerate(zip(self.scan_energies, self.scan_clusters)):
-                    label = '{:s}_t{:d}'.format(prefix, i)
-                    self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, scan_clusters[numpy.argmax(scan_energies)])
-
-            elif self.scan_reverse and self.product_energies != [] and self.scans == []:
-                for i, cluster in enumerate(product_clusters):
-                    label = '{:s}_s{:d}'.format(prefix, i)
-                    self.scans.append(label)
-                    self.setup_scan(label, cluster)
-
-            elif not self.scan_reverse and self.reactant_energies != [] and self.scans == []:
-                for i, cluster in enumerate(reactant_clusters):
-                    label = '{:s}_s{:d}'.format(prefix, i)
-                    self.scans.append(label)
-                    self.setup_scan(label, cluster)
-
-        else:
-
-            if self.transition_state_optimizations == []:
-                for i, cluster in enumerate(self.transition_states):
-                    label = '{:s}_t{:d}'.format(prefix, i)
-                    self.transition_state_optimizations.append(label)
-                    self.setup_transition_state_optimization(label, cluster)
+        if self.transition_state_optimizations == []:
+            for i, cluster in enumerate(self.transition_states):
+                label = '{:s}_t{:d}'.format(prefix, i)
+                self.transition_state_optimizations.append(label)
+                self.setup_transition_state_optimization(label, cluster)
 
         return
 
@@ -211,7 +178,7 @@ class Gaussian():
 !
 
 '''.format(n_proc=self.n_proc, basename=os.path.basename(label), method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
-            if upper(self.basis) in ['GEN', 'GENECP']:
+            if self.basis.upper() in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         else:
@@ -230,36 +197,8 @@ class Gaussian():
                     atom_type = 0
                 body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '\n'
-            if upper(self.basis) in ['GEN', 'GENECP']:
+            if self.basis.upper() in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
-
-        if not os.path.exists('{:s}.com'.format(label)):
-            f = open('{:s}.com'.format(label), 'wt')
-            f.write(header + body + footer)
-            f.close()
-
-        return
-
-    def setup_scan(self, label, cluster, state=3):
-
-        atoms = cluster.get_chemical_symbols()
-        coords = cluster.get_positions()
-
-        header = '''%NProcShared={n_proc:d}
-#n {preopt:s} NoSymm SCF=XQC Opt=(ModRedundant,Loose,MaxCycles=200)
-
- {label:s}
-
-{charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, preopt=self.preopt, label=label, charge=self.charges[state], mult=self.mults[state])
-        body = ''
-        for j, (X, coord) in enumerate(zip(atoms, coords)):
-            if j in self.frozen_atoms[state]:
-                atom_type = -1
-            else:
-                atom_type = 0
-            body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
-        footer = '\n{:s}\n\n'.format(self.scan_params)
 
         if not os.path.exists('{:s}.com'.format(label)):
             f = open('{:s}.com'.format(label), 'wt')
@@ -303,7 +242,7 @@ class Gaussian():
 !
 
 '''.format(n_proc=self.n_proc, basename=os.path.basename(label), method=self.method, basis=self.basis, label=label, charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
-            if upper(self.basis) in ['GEN', 'GENECP']:
+            if self.basis.upper() in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         else:
@@ -322,7 +261,7 @@ class Gaussian():
                     atom_type = 0
                 body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
             footer = '\n'
-            if upper(self.basis) in ['GEN', 'GENECP']:
+            if self.basis.upper() in ['GEN', 'GENECP']:
                 footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(label)):
@@ -358,14 +297,6 @@ class Gaussian():
                     self.product_energies.append(optimized_energy)
                     self.product_clusters.append(optimized_cluster)
 
-        if self.scan_energies == []:
-            for label in self.scans:
-                output = self.run_scan(label, dry_run)
-                if output is not None:
-                    scan_energies, scan_clusters = output
-                    self.scan_energies.append(scan_energies)
-                    self.scan_clusters.append(scan_clusters)
-
         if self.transition_state_energies == []:
             for label in self.transition_state_optimizations:
                 output = self.run_transition_state_optimization(label, dry_run)
@@ -393,19 +324,6 @@ class Gaussian():
             else:
                 print(label, 'Incomplete')
                 return
-        else:
-            print(label, 'No output')
-            return
-
-    def run_scan(self, label, dry_run=False):
-
-        if not os.path.exists('{:s}.log'.format(label)):
-            if not dry_run:
-                os.system('g16 {label:s}.com > {label:s}.log'.format(label=label))
-
-        if os.path.exists('{:s}.log'.format(label)):
-            energies, clusters = read_geom_opt('{:s}.log'.format(label))
-            return energies, clusters
         else:
             print(label, 'No output')
             return
