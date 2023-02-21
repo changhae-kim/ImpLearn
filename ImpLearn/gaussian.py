@@ -107,7 +107,10 @@ class Gaussian():
             else:
                 self.frozen_atoms = frozen_atoms
         if transition_state_criteria is not None:
-            self.transition_state_criteria = transition_state_criteria
+            if isinstance(transition_state_criteria, dict):
+                self.transition_state_criteria = [transition_state_criteria] * len(self.transition_states)
+            else:
+                self.transition_state_criteria = transition_state_criteria
         if freq_cutoff is not None:
             self.freq_cutoff = freq_cutoff
         return
@@ -298,8 +301,8 @@ class Gaussian():
                     self.product_clusters.append(optimized_cluster)
 
         if self.transition_state_energies == []:
-            for label in self.transition_state_optimizations:
-                output = self.run_transition_state_optimization(label, dry_run)
+            for label, criteria in zip(self.transition_state_optimizations, self.transition_state_criteria):
+                output = self.run_transition_state_optimization(label, criteria, dry_run)
                 if output is not None:
                     optimized_energy, optimized_cluster = output
                     self.transition_state_energies.append(optimized_energy)
@@ -328,7 +331,7 @@ class Gaussian():
             print(label, 'No output')
             return
 
-    def run_transition_state_optimization(self, label, dry_run=False):
+    def run_transition_state_optimization(self, label, criteria, dry_run=False):
 
         if not os.path.exists('{:s}.log'.format(label)) or not check_normal_termination('{:s}.log'.format(label)):
             if not dry_run:
@@ -338,7 +341,7 @@ class Gaussian():
             status = check_normal_termination('{:s}.log'.format(label))
             if status == True:
                 energies, clusters = read_geom_opt('{:s}.log'.format(label))
-                if check_geometry(clusters[-1], self.transition_state_criteria):
+                if check_geometry(clusters[-1], criteria):
                     return energies[-1], clusters[-1]
                 else:
                     print(label, 'Wrong transition state')
