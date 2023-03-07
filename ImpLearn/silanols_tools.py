@@ -61,6 +61,7 @@ def reorder_podal_oxygens(podal_coords, O1_coord, O2_coord, Si1_coord, Si2_coord
         else:
             n = numpy.argmin([numpy.linalg.norm(podal_coords[i] - Si2_coord) for i in reordered1])
             reordered1 = [reordered1[(n+1+i)%len(reordered1)] for i, _ in enumerate(reordered1)]
+
     elif len(reordered2) > 2:
         if len(reordered1) > 0:
             if O3_coord is None:
@@ -76,6 +77,7 @@ def reorder_podal_oxygens(podal_coords, O1_coord, O2_coord, Si1_coord, Si2_coord
         else:
             m = numpy.argmin([numpy.linalg.norm(Si1_coord - podal_coords[j]) for j in reordered2])
             reordered2 = [reordered2[(m+i)%len(reordered2)] for i, _ in enumerate(reordered2)]
+
     reordered = reordered1 + reordered2
 
     return reordered
