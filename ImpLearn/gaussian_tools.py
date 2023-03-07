@@ -61,6 +61,45 @@ def read_geom_opt(file_path):
         clusters.append(Atoms(atoms, coords))
     return energies, clusters
 
+def read_irc(file_path):
+    f = open(file_path, 'rt')
+    n_cycles = 0
+    energies = []
+    clusters = []
+    status = 0
+    for line in f:
+        if status == 0:
+            if line.strip().startswith('Input orientation:'):
+                atoms = []
+                coords = []
+                status = 1
+            elif line.strip().startswith('SCF Done:'):
+                n_cycles += 1
+                energy = float(line.split()[4])
+            elif line.strip().startswith('# OF POINTS ALONG THE PATH') or (line.strip().startswith('Normal termination') and energies == []):
+                energies.append(energy)
+                clusters.append(Atoms(atoms, coords))
+            elif line.strip().startswith('Calculation of FORWARD path complete.') or line.strip().startswith('Calculation of REVERSE path complete.'):
+                energies = list(reversed(energies))
+                clusters = list(reversed(clusters))
+        elif status == 1:
+            if line.strip().startswith('-----'):
+                status = 2
+        elif status == 2:
+            if line.strip().startswith('-----'):
+                status = 3
+        elif status == 3:
+            if line.strip().startswith('-----'):
+                status = 0
+            else:
+                atoms.append(int(line.split()[1]))
+                coords.append([float(x) for x in line.split()[-3:]])
+    f.close()
+    if energies == [] and n_cycles > 1:
+        energies.append(energy)
+        clusters.append(Atoms(atoms, coords))
+    return energies, clusters
+
 def read_thermochem(file_path, temp=None, pressure=None,
         elec=True, trans=False, rot=False, vib=True,
         freq_cutoff=0.0, verbose=False):
