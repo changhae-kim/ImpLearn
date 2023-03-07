@@ -4,6 +4,7 @@ from ase import Atoms
 from ase.io import read, write
 from ase.neighborlist import neighbor_list
 from matplotlib import pyplot
+from scipy.spatial.transform import Rotation
 
 from .silanols_tools import reorder_podal_oxygens
 
@@ -18,7 +19,9 @@ class Silanols():
             exclude_waters=True,
             exclude_geminals=True,
             reorder_podals=True,
-            F_capping=False
+            F_capping=False,
+            reorient_clusters=False,
+            reorder_atoms=False
             ):
 
         self.slab = self.load_slab(file_path, file_type, pbc)
@@ -31,6 +34,8 @@ class Silanols():
         self.exclude_geminals = exclude_geminals
         self.reorder_podals = reorder_podals
         self.F_capping = F_capping
+        self.reorient_clusters = reorient_clusters
+        self.reorder_atoms = reorder_atoms
 
         self.OH_groups = self.get_OH_groups()
         self.geminal_OH_pairs = self.get_geminal_OH_pairs()
@@ -161,7 +166,7 @@ class Silanols():
 
         return viable_OH_pairs
 
-    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=None, F_capping=None):
+    def carve_minimal_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=None, F_capping=None, reorient_clusters=None, reorder_atoms=None):
 
         if slab is None:
             slab = self.slab
@@ -177,6 +182,10 @@ class Silanols():
             reorder_podals = self.reorder_podals
         if F_capping is None:
             F_capping = self.F_capping
+        if reorient_clusters is None:
+            reorient_clusters = self.reorient_clusters
+        if reorder_atoms is None:
+            reorder_atoms = self.reorder_atoms
 
         atoms = slab.get_chemical_symbols()
         bonds = neighbor_list('ij', slab, bond_cutoffs)
@@ -249,14 +258,12 @@ class Silanols():
                 for coord in old_coords[q:]:
                     cluster_coords.append(coord)
 
+            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
+            podal_hydrogens = []
             if F_capping:
-                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
                 for n, i in enumerate(podal_oxygens):
                     cluster_atoms[m + n] = 'F'
-
             else:
-                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
-                podal_hydrogens = []
                 for n, i in enumerate(podal_oxygens):
                     i_neighbors = bonds[1][bonds[0] == i]
                     for j in i_neighbors:
@@ -267,10 +274,211 @@ class Silanols():
                             axis = axis / numpy.linalg.norm(axis)
                             cluster_coords.append(cluster_coords[m + n] + axis * OH_bond_length)
 
+            if reorient_clusters:
+                n = len(peripheral_hydrogens)
+                m = len(peripheral_hydrogens) + 1
+                p = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                q = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + 1
+                origin = 0.5 * (cluster_coords[p] + cluster_coords[q])
+                axes = numpy.empty((3, 3))
+                axes[0] = cluster_coords[q] - cluster_coords[p]
+                axes[0] = axes[0] / numpy.linalg.norm(axes[0])
+                axes[2] = cluster_coords[n] + cluster_coords[m] - cluster_coords[p] - cluster_coords[q]
+                axes[2] = axes[2] - axes[0] * numpy.inner(axes[0], axes[2])
+                axes[2] = axes[2] / numpy.linalg.norm(axes[2])
+                axes[1] = numpy.cross(axes[2], axes[0])
+                cluster_coords = [numpy.einsum('ij,j->i', axes, coords - origin) for coords in cluster_coords]
+
+            if reorder_atoms:
+                n = len(peripheral_hydrogens)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens)
+                l = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                p = l + len(chasis_silicons)
+                q = l + len(chasis_silicons) + len(podal_oxygens)
+                r = l + len(chasis_silicons) + len(podal_oxygens) + len(podal_hydrogens)
+                r = list(range(q, r))
+                q = list(range(p, q))
+                p = list(range(l, p))
+                l = list(range(m, l))
+                m = list(range(n, m))
+                n = list(range(0, n))
+                indices = r + q + p + l + m + n
+                cluster_atoms = [cluster_atoms[i] for i in indices]
+                cluster_coords = [cluster_coords[i] for i in indices]
+
             cluster = Atoms(cluster_atoms, cluster_coords)
             minimal_clusters.append(cluster)
 
         return minimal_clusters
+
+    def carve_secondary_clusters(self, slab=None, bond_cutoffs=None, OH_groups=None, viable_OH_pairs=None, OH_bond_length=None, reorder_podals=None, F_capping=None, reorient_clusters=None, reorder_atoms=None):
+
+        if slab is None:
+            slab = self.slab
+        if bond_cutoffs is None:
+            bond_cutoffs = self.bond_cutoffs
+        if OH_groups is None:
+            OH_groups = self.OH_groups
+        if viable_OH_pairs is None:
+            viable_OH_pairs = self.viable_OH_pairs
+        if OH_bond_length is None:
+            OH_bond_length = self.OH_bond_length
+        if reorder_podals is None:
+            reorder_podals = self.reorder_podals
+        if F_capping is None:
+            F_capping = self.F_capping
+        if reorient_clusters is None:
+            reorient_clusters = self.reorient_clusters
+        if reorder_atoms is None:
+            reorder_atoms = self.reorder_atoms
+
+        atoms = slab.get_chemical_symbols()
+        bonds = neighbor_list('ij', slab, bond_cutoffs)
+
+        secondary_clusters = []
+        for a, b in viable_OH_pairs:
+
+            OH1_group = OH_groups[a]
+            OH2_group = OH_groups[b]
+
+            cluster_atoms = []
+            cluster_coords = []
+
+            peripheral_hydrogens = [OH1_group[0], OH2_group[0]]
+            cluster_atoms.append('H')
+            cluster_coords.append(numpy.zeros(3))
+            cluster_atoms.append('H')
+            cluster_coords.append(cluster_coords[0] + slab.get_distance(OH1_group[0], OH2_group[0], mic=True, vector=True))
+
+            peripheral_oxygens = [OH1_group[1], OH2_group[1]]
+            cluster_atoms.append('O')
+            cluster_coords.append(cluster_coords[0] + slab.get_distance(OH1_group[0], OH1_group[1], mic=True, vector=True))
+            cluster_atoms.append('O')
+            cluster_coords.append(cluster_coords[1] + slab.get_distance(OH2_group[0], OH2_group[1], mic=True, vector=True))
+
+            chasis_silicons = []
+            for n, i in enumerate(peripheral_oxygens):
+                i_neighbors = bonds[1][bonds[0] == i]
+                for j in i_neighbors:
+                    if atoms[j] == 'Si' and j not in chasis_silicons:
+                        chasis_silicons.append(j)
+                        cluster_atoms.append('Si')
+                        cluster_coords.append(cluster_coords[len(peripheral_hydrogens) + n] + slab.get_distance(i, j, mic=True, vector=True))
+
+            chasis_oxygens = []
+            podal_oxygens = []
+            for n, i in enumerate(chasis_silicons):
+                i_neighbors = bonds[1][bonds[0] == i]
+                for j in i_neighbors:
+                    if atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens:
+                        j_neighbors = bonds[1][bonds[0] == j]
+                        m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                        if len(numpy.intersect1d(chasis_silicons, j_neighbors)) > 1:
+                            chasis_oxygens.append(j)
+                            cluster_atoms.insert(m, 'O')
+                            cluster_coords.insert(m, cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
+                        else:
+                            podal_oxygens.append(j)
+                            cluster_atoms.append('O')
+                            cluster_coords.append(cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
+
+            if reorder_podals:
+                n = len(peripheral_hydrogens)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                p = m + len(chasis_silicons)
+                q = m + len(chasis_silicons) + len(podal_oxygens)
+                if len(chasis_oxygens) > 0:
+                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], cluster_coords[m-1])
+                else:
+                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
+                old_coords = cluster_coords
+                old_podals = podal_oxygens
+                cluster_coords = []
+                podal_oxygens = []
+                for coord in old_coords[:p]:
+                    cluster_coords.append(coord)
+                for i in reordered:
+                    podal_oxygens.append(old_podals[i])
+                    cluster_coords.append(old_coords[p:q][i])
+                for coord in old_coords[q:]:
+                    cluster_coords.append(coord)
+
+            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons)
+            podal_silicons = []
+            for n, i in enumerate(podal_oxygens):
+                i_neighbors = bonds[1][bonds[0] == i]
+                for j in i_neighbors:
+                    if atoms[j] == 'Si' and j not in chasis_silicons + podal_silicons:
+                        podal_silicons.append(j)
+                        cluster_atoms.append('Si')
+                        cluster_coords.append(cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
+
+            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons) + len(podal_oxygens)
+            secondary_oxygens = []
+            for n, i in enumerate(podal_silicons):
+                i_neighbors = bonds[1][bonds[0] == i]
+                for j in i_neighbors:
+                    if atoms[j] == 'O' and j not in peripheral_oxygens + chasis_oxygens + podal_oxygens + secondary_oxygens:
+                        secondary_oxygens.append(j)
+                        cluster_atoms.append('O')
+                        cluster_coords.append(cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
+
+            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + len(chasis_silicons) + len(podal_oxygens) + len(podal_silicons)
+            secondary_hydrogens = []
+            if F_capping:
+                for n, i in enumerate(secondary_oxygens):
+                    cluster_atoms[m + n] = 'F'
+            else:
+                for n, i in enumerate(secondary_oxygens):
+                    i_neighbors = bonds[1][bonds[0] == i]
+                    for j in i_neighbors:
+                        if atoms[j] == 'Si' and j not in chasis_silicons + podal_silicons:
+                            secondary_hydrogens.append(j)
+                            cluster_atoms.append('H')
+                            axis = slab.get_distance(i, j, mic=True, vector=True)
+                            axis = axis / numpy.linalg.norm(axis)
+                            cluster_coords.append(cluster_coords[m + n] + axis * OH_bond_length)
+
+            if reorient_clusters:
+                n = len(peripheral_hydrogens)
+                m = len(peripheral_hydrogens) + 1
+                p = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                q = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens) + 1
+                origin = 0.5 * (cluster_coords[p] + cluster_coords[q])
+                axes = numpy.empty((3, 3))
+                axes[0] = cluster_coords[q] - cluster_coords[p]
+                axes[0] = axes[0] / numpy.linalg.norm(axes[0])
+                axes[2] = cluster_coords[n] + cluster_coords[m] - cluster_coords[p] - cluster_coords[q]
+                axes[2] = axes[2] - axes[0] * numpy.inner(axes[0], axes[2])
+                axes[2] = axes[2] / numpy.linalg.norm(axes[2])
+                axes[1] = numpy.cross(axes[2], axes[0])
+                cluster_coords = [numpy.einsum('ij,j->i', axes, coords - origin) for coords in cluster_coords]
+
+            if reorder_atoms:
+                n = len(peripheral_hydrogens)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens)
+                l = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(chasis_oxygens)
+                p = l + len(chasis_silicons)
+                q = l + len(chasis_silicons) + len(podal_oxygens)
+                r = l + len(chasis_silicons) + len(podal_oxygens) + len(podal_silicons)
+                s = r + len(secondary_oxygens)
+                t = r + len(secondary_oxygens) + len(secondary_silicons)
+                t = list(range(s, t))
+                s = list(range(r, s))
+                r = list(range(q, r))
+                q = list(range(p, q))
+                p = list(range(l, p))
+                l = list(range(m, l))
+                m = list(range(n, m))
+                n = list(range(0, n))
+                indices = t + s + r + q + p + l + m + n
+                cluster_atoms = [cluster_atoms[n] for n in indices]
+                cluster_coords = [cluster_coords[n] for n in indices]
+
+            cluster = Atoms(cluster_atoms, cluster_coords)
+            secondary_clusters.append(cluster)
+
+        return secondary_clusters
 
     def analyze_bonds(self, slab=None, bond_cutoffs=None):
 
@@ -324,18 +532,17 @@ class Silanols():
 
         return
 
-    def save_clusters(self, file_path, file_type, viable_OH_pairs=None, minimal_clusters=None):
-        if viable_OH_pairs is None:
-            viable_OH_pairs = self.viable_OH_pairs
-        if minimal_clusters is None:
-            minimal_clusters = self.minimal_clusters
-        for (a, b), cluster in zip(viable_OH_pairs, minimal_clusters):
+    def save_clusters(self, file_path, file_type, which_OH_pairs=None, which_clusters=None):
+        if which_OH_pairs is None:
+            which_OH_pairs = self.viable_OH_pairs
+        if which_clusters is None:
+            which_clusters = self.minimal_clusters
+        for (a, b), cluster in zip(which_OH_pairs, which_clusters):
             write(file_path.format(a, b), cluster, file_type)
         return
 
 
 if __name__ == '__main__':
-
 
     clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp')
     print('--- MAIN ---')
