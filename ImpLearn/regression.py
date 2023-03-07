@@ -8,7 +8,7 @@ from scipy.special import logsumexp
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
-class MyMLKR(MLKR):
+class ReMLKR(MLKR):
 
     def __init__(self, weights=None, regularizer='L0', alpha=0.0,
             n_components=None, init='random', tol=None, max_iter=1000, verbose=False, preprocessor=None, random_state=None):
@@ -115,7 +115,7 @@ class Kernel():
             self.y_scaler.fit(self.y_train[:, numpy.newaxis])
             self.y_train = self.y_scaler.transform(self.y_train[:, numpy.newaxis]).ravel()
 
-        model = MyMLKR(weights=self.weights, regularizer=self.regularizer, alpha=self.alpha, random_state=self.random_state)
+        model = ReMLKR(weights=self.weights, regularizer=self.regularizer, alpha=self.alpha, random_state=self.random_state)
         model.fit(self.X_train, self.y_train)
 
         self.matrix = model.get_mahalanobis_matrix()
