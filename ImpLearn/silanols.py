@@ -12,16 +12,16 @@ from .silanols_tools import reorder_podal_oxygens
 class Silanols():
 
     def __init__(self, file_path, file_type,
-            pbc=None,
+            pbc=[21.01554, 21.01554, 90.23032],
             bond_cutoffs={('Si', 'O'): 2.3, ('O', 'H'): 1.2},
-            viable_cutoff=4.2,
+            viable_cutoff=5.5,
             OH_bond_length=0.956,
             exclude_waters=True,
             exclude_geminals=True,
             reorder_podals=True,
-            F_capping=False,
-            reorient_clusters=False,
-            reorder_atoms=False
+            F_capping=True,
+            reorient_clusters=True,
+            reorder_atoms=True
             ):
 
         self.slab = self.load_slab(file_path, file_type, pbc)
