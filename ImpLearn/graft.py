@@ -104,7 +104,7 @@ class Graft():
         output_coords = match.transform(ref_coords)
         output_coords[self.ref_podal_atoms] = input_coords[self.input_podal_atoms]
 
-        self.output_cluster = Atoms(ref_atoms, output_coords)
+        self.output_cluster = Atoms(output_atoms, output_coords)
 
         return self.output_cluster
 
