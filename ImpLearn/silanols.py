@@ -11,7 +11,8 @@ from .silanols_tools import reorder_podal_oxygens
 
 class Silanols():
 
-    def __init__(self, file_path, file_type,
+    def __init__(self, file_path,
+            file_type='xyz',
             pbc=[21.01554, 21.01554, 90.23032],
             bond_cutoffs={('Si', 'O'): 2.3, ('O', 'H'): 1.2},
             viable_cutoff=5.5,
@@ -532,7 +533,7 @@ class Silanols():
 
         return
 
-    def save_clusters(self, file_path, file_type, which_OH_pairs=None, which_clusters=None):
+    def save_clusters(self, file_path, file_type='xyz', which_OH_pairs=None, which_clusters=None):
         if which_OH_pairs is None:
             which_OH_pairs = self.viable_OH_pairs
         if which_clusters is None:

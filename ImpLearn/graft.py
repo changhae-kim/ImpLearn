@@ -108,7 +108,7 @@ class Graft():
 
         return self.output_cluster
 
-    def save_cluster(self, file_path, file_type, cluster=None):
+    def save_cluster(self, file_path, file_type='xyz', cluster=None):
         if cluster is None:
             cluster = self.output_cluster
         write(file_path, cluster, file_type)
