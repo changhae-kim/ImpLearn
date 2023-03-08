@@ -44,6 +44,9 @@ class Crest():
         else:
             self.constraints = constraints
 
+        self.labels = []
+        self.workspaces = []
+
         return
 
     def setup(self):
@@ -62,15 +65,15 @@ class Crest():
         for i in range(n_struct):
             file_name = os.path.basename(self.file_paths[i])
             label = file_name.rsplit('.', 1)[0]
-            work_dir = os.path.join(self.prefix, label)
-            if not os.path.exists(work_dir):
+            workspace = os.path.join(self.prefix, label)
+            if not os.path.exists(workspace):
 
                 cwd = os.getcwd()
 
-                os.mkdir(work_dir)
-                os.system('cp {:s} {:s}'.format(self.file_paths[i], work_dir))
+                os.mkdir(workspace)
+                os.system('cp {:s} {:s}'.format(self.file_paths[i], workspace))
 
-                os.chdir(work_dir)
+                os.chdir(workspace)
 
                 os.system('crest {:s} --constrain 1-4 >/dev/null 2>&1'.format(file_name))
                 os.remove('.xcontrol.sample')
@@ -85,29 +88,31 @@ class Crest():
 
                 os.chdir(cwd)
 
+            if len(self.labels) < n_struct:
+                self.labels.append(label)
+                self.workspaces.append(workspace)
+
         return
 
     def run(self, dry_run=False):
 
         n_struct = len(self.file_paths)
         for i in range(n_struct):
-            label = os.path.basename(self.file_paths[i]).rsplit('.', 1)[0]
-            work_dir = os.path.join(self.prefix, label)
-            output = os.path.join(work_dir, 'crest.log')
+            output = os.path.join(self.workspaces[i], 'crest.log')
 
             if not os.path.exists(output):
                 if not dry_run:
                     cwd = os.getcwd()
-                    os.chdir(work_dir)
+                    os.chdir(workspace)
                     os.system('/bin/bash crest.sh')
                     os.chdir(cwd)
 
             if os.path.exists(output):
                 status == check_normal_termination(output)
                 if status == False:
-                    print(work_dir, 'Error termination')
+                    print(self.workspaces[i], 'Error termination')
             else:
-                print(work_dir, 'No output')
+                print(self.workspaces[i], 'No output')
 
         return
 
