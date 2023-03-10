@@ -3,7 +3,7 @@ import numpy
 
 class Sampler():
 
-    def __init__(self, n_points, initial_batch=None, initial_batch_size=50, batch_size=5, replace=False, exclude=[], random_state=None):
+    def __init__(self, n_points, initial_batch=None, initial_batch_size=20, batch_size=10, replace=False, exclude=[], random_state=None):
 
         self.n_points = n_points
         self.replace = replace
