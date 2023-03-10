@@ -2,7 +2,7 @@ import numpy
 import os
 
 
-def check_normal_termination(self, file_path):
+def check_normal_termination(file_path):
     last_line = ''
     f = open(file_path,'rt')
     for line in f:
@@ -108,7 +108,7 @@ class Crest():
                     os.chdir(cwd)
 
             if os.path.exists(output):
-                status == check_normal_termination(output)
+                status = check_normal_termination(output)
                 if status == False:
                     print(self.workspaces[i], 'Error termination')
             else:
