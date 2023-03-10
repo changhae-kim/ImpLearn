@@ -102,7 +102,7 @@ def read_irc(file_path):
 
 def read_thermochem(file_path, temp=None, pressure=None,
         elec=True, trans=False, rot=False, vib=True,
-        freq_cutoff=0.0, verbose=False):
+        vib_cutoff=0.0, verbose=False):
 
     kB = 1.380649e-23 / 4.3597447222071e-18
     K = 6.62607015e-34 * 2.99792458e+8 / 1.380649e-23 * 100.0
@@ -164,7 +164,7 @@ def read_thermochem(file_path, temp=None, pressure=None,
     S_r = kB * (log_Q_r + 1.5 * numpy.log(T/T_0) + 1.5)
 
     freqs = numpy.array(freqs)
-    T_v = freqs[freqs > freq_cutoff] * K
+    T_v = freqs[freqs > vib_cutoff] * K
     E_v = kB * numpy.sum( T_v * ( 0.5 + 1.0/(numpy.exp(T_v/T) - 1.0) ) )
     S_v = kB * numpy.sum( (T_v/T) / (numpy.exp(T_v/T) - 1.0) - numpy.log(1.0 - numpy.exp(-T_v/T)) )
 
