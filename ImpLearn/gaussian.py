@@ -235,7 +235,7 @@ class Gaussian():
         self.enthalpies = [[] for i in range(n_struct)]
         self.entropies = [[] for i in range(n_struct)]
         for i in range(n_struct):
-            for optimizer in self.structures[i]:
+            for optimizer in self.optimizers[i]:
                 E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressure, vib_cutoff=vib_cutoff, verbose=True)
                 self.gibbs_energies[i].append(G)
                 self.enthalpies[i].append(H)
