@@ -37,7 +37,7 @@ class ReMLKR(MLKR):
         X_embedded = numpy.dot(X, A.T)
         dist = pairwise_distances(X_embedded, squared=True)
         numpy.fill_diagonal(dist, numpy.inf)
-        softmax = numpy.exp(- dist - logsumexp(- dist, axis=1)[:, numpy.newaxis])
+        softmax = numpy.exp( -dist - logsumexp(- dist, axis=1)[:, numpy.newaxis] )
         yhat = softmax.dot(y)
         ydiff = yhat - y
         cost = (w * ydiff ** 2).sum()
@@ -75,7 +75,7 @@ class ReMLKR(MLKR):
 
 class Kernel():
 
-    def __init__(self, norm='minmax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0, random_state=None):
+    def __init__(self, norm='MinMax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0, random_state=None):
         if X_norm is None:
             X_norm = norm
         if y_norm is None:
@@ -100,17 +100,17 @@ class Kernel():
         self.weights = w
 
         if self.X_norm is not None:
-            if self.X_norm in ['minmax', 'MinMax']:
+            if self.X_norm.upper() == 'MINMAX':
                 self.X_scaler = MinMaxScaler()
-            elif self.X_norm in ['standard', 'Standard']:
+            elif self.X_norm.upper() == 'STANDARD':
                 self.X_scaler = StandardScaler()
             self.X_scaler.fit(self.X_train)
             self.X_train = self.X_scaler.transform(self.X_train)
 
         if self.y_norm is not None:
-            if self.y_norm in ['minmax', 'MinMax']:
+            if self.y_norm.upper() == 'MINMAX':
                 self.y_scaler = MinMaxScaler()
-            elif self.y_norm in ['standard', 'Standard']:
+            elif self.y_norm.upper() == 'STANDARD':
                 self.y_scaler = StandardScaler()
             self.y_scaler.fit(self.y_train[:, numpy.newaxis])
             self.y_train = self.y_scaler.transform(self.y_train[:, numpy.newaxis]).ravel()
