@@ -13,7 +13,7 @@ class Gaussian():
             file_type='xyz',
             structure_types='EQ',
             charges=0, mults=4,
-            temp=373.15, pressure=1.0, vib_cutoff=100.0,
+            temps=373.15, pressure=1.0, vib_cutoff=100.0,
             n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****\nF 0\n3-21G\n****',
             frozen_atoms=[0, 1, 2, 3],
@@ -40,7 +40,11 @@ class Gaussian():
         else:
             self.mults = mults
 
-        self.temp = temp
+        if isinstance(temps, int):
+            self.temps = [temps] * n_struct
+        else:
+            self.temps = temps
+
         self.pressure = pressure
         self.vib_cutoff = vib_cutoff
 
@@ -59,31 +63,31 @@ class Gaussian():
             self.frozen_atoms = frozen_atoms
 
         if isinstance(transition_state_criteria, dict):
-            self.transition_state_criteria = [transition_state_criteria for i in range(n_struct) if self.structure_types[i].upper() == 'TS' else {}]
+            self.transition_state_criteria = [transition_state_criteria if self.structure_types[i].upper() == 'TS' else {} for i in range(n_struct)]
         else:
             self.transition_state_criteria = transition_state_criteria
 
-        self.optimizers = []
-        self.energies = []
-        self.enthalpies = []
-        self.entropies = []
-        self.gibbs_energies = []
-        self.clusters = []
+        self.optimizers = [[] for i in range(n_struct)]
+        self.energies = [[] for i in range(n_struct)]
+        self.clusters = [[] for i in range(n_struct)]
+        self.enthalpies = [[] for i in range(n_struct)]
+        self.entropies = [[] for i in range(n_struct)]
+        self.gibbs_energies = [[] for i in range(n_struct)]
 
         return
 
     def setup(self):
-
         n_struct = len(self.structures)
         for i in range(n_struct):
+            n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
-                optimizer = '{:s}.{:d}'.format(self.gaussian_prefixes[i], j)
-                self.optimizers.append(optimizer)
+                optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.gaussian_prefixes[i], j)
                 if self.structure_types[i].upper() == 'TS':
-                    self.setup_transition_state_optimization(i, optimizer, cluster)
+                    self.setup_transition_state_optimization(i, optimizer, self.structures[i][j])
                 else:
-                    self.setup_geometry_optimization(i, optimizer, cluster)
-
+                    self.setup_geometry_optimization(i, optimizer, self.structures[i][j])
+                if len(self.optimizers[i]) < len(self.structures[i]):
+                    self.optimizers[i].append(optimizer)
         return self.optimizers
 
     def setup_geometry_optimization(self, state, optimizer, cluster):
@@ -97,7 +101,7 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state], temp=self.temps[state], pressure=self.pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms[state]:
@@ -127,7 +131,7 @@ class Gaussian():
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=os.path.basename(optimzier), charge=self.charges[state], mult=self.mults[state], temp=self.temp, pressure=self.pressure)
+'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state], temp=self.temps[state], pressure=self.pressure)
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms[state]:
@@ -147,18 +151,17 @@ class Gaussian():
         return
 
     def run(self, dry_run=False):
-
         n_struct = len(self.structures)
         for i in range(n_struct):
-            if self.structure_types[i].upper() == 'TS':
-                output = self.run_transition_state_optimization(self.optimizers[i], self.transition_state_criteria[i], dry_run)
-            else:
-                output = self.run_geometry_optimization(self.optimizers[i], dry_run)
-            if output is not None:
-                optimized_energy, optimized_cluster = output
-                self.catalyst_energies.append(optimized_energy)
-                self.catalyst_clusters.append(optimized_cluster)
-
+            for optimizer in self.optimizers[i]:
+                if self.structure_types[i].upper() == 'TS':
+                    output = self.run_transition_state_optimization(optimizer, self.transition_state_criteria[i], dry_run)
+                else:
+                    output = self.run_geometry_optimization(optimizer, dry_run)
+                if output is not None:
+                    energy, cluster = output
+                    self.energies[i].append(energy)
+                    self.clusters[i].append(cluster)
         return
 
     def run_geometry_optimization(self, optimizer, dry_run=False):
@@ -209,12 +212,14 @@ class Gaussian():
 
         return
 
-    def get_thermodynamics(self, temp=None, pressure=None, vib_cutoff=None):
+    def get_thermodynamics(self, temps=None, pressure=None, vib_cutoff=None):
 
-        if temp is None:
-            temp = self.temp
-        elif temp != self.temp:
-            self.temp = temp
+        n_struct = len(self.structures)
+
+        if temps is None:
+            temps = self.temps
+        elif isinstance(temps, int):
+            temps = [temps] * n_struct
 
         if pressure is None:
             pressure = self.pressure
@@ -226,66 +231,70 @@ class Gaussian():
         elif vib_cutoff != self.vib_cutoff:
             self.vib_cutoff = vib_cutoff
 
-        self.gibbs_energies = []
-        self.enthalpies = []
-        self.entropies = []
-        for label in self.catalyst_optimizations:
-            E_e, H, S, G = read_thermochem('{:s}.log'.format(label), temp=temp, pressure=pressure, vib_cutoff=vib_cutoff, verbose=True)
-            self.gibbs_energies.append(G)
-            self.enthalpies.append(H)
-            self.entropies.append(S)
+        self.gibbs_energies = [[] for i in range(n_struct)]
+        self.enthalpies = [[] for i in range(n_struct)]
+        self.entropies = [[] for i in range(n_struct)]
+        for i in range(n_struct):
+            for optimizer in self.structures[i]:
+                E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressure, vib_cutoff=vib_cutoff, verbose=True)
+                self.gibbs_energies[i].append(G)
+                self.enthalpies[i].append(H)
+                self.entropies[i].append(S)
 
         return
 
 
-    def get_gibbs_energies(self, temp=None, pressure=None, vib_cutoff=None):
+    def get_gibbs_energies(self, temps=None, pressure=None, vib_cutoff=None):
 
-        if temp is None:
-            temp = self.temp
+        if temps is None:
+            temps = self.temps
         if pressure is None:
             pressure = self.pressure
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        if self.gibbs_energies == []:
-            self.get_thermodynamics(temp, pressure, vib_cutoff)
+        n_struct = len(self.structures)
+        if self.gibbs_energies == [[] for i in range(n_struct)]:
+            self.get_thermodynamics(temps, pressure, vib_cutoff)
 
-        if temp != self.temp or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temp, pressure, vib_cutoff)
+        if temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
+            self.get_thermodynamics(temps, pressure, vib_cutoff)
 
         return self.gibbs_energies
 
-    def get_enthalpies(self, temp=None, pressure=None, vib_cutoff=None):
+    def get_enthalpies(self, temps=None, pressure=None, vib_cutoff=None):
 
-        if temp is None:
-            temp = self.temp
+        if temps is None:
+            temps = self.temps
         if pressure is None:
             pressure = self.pressure
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        if self.enthalpies == []:
-            self.get_thermodynamics(temp, pressure, vib_cutoff)
+        n_struct = len(self.structures)
+        if self.enthalpies == [[] for i in range(n_struct)]:
+            self.get_thermodynamics(temps, pressure, vib_cutoff)
 
-        if temp != self.temp or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temp, pressure, vib_cutoff)
+        if temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
+            self.get_thermodynamics(temps, pressure, vib_cutoff)
 
         return self.enthalpies
 
-    def get_entropies(self, temp=None, pressure=None, vib_cutoff=None):
+    def get_entropies(self, temps=None, pressure=None, vib_cutoff=None):
 
-        if temp is None:
-            temp = self.temp
+        if temps is None:
+            temps = self.temps
         if pressure is None:
             pressure = self.pressure
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        if self.entropies == []:
-            self.get_thermodynamics(temp, pressure, vib_cutoff)
+        n_struct = len(self.structures)
+        if self.entropies == [[] for i in range(n_struct)]:
+            self.get_thermodynamics(temps, pressure, vib_cutoff)
 
-        if temp != self.temp or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temp, pressure, vib_cutoff)
+        if temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
+            self.get_thermodynamics(temps, pressure, vib_cutoff)
 
         return entropies
 
