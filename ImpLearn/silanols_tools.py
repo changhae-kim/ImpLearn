@@ -82,7 +82,7 @@ def reorder_podal_oxygens(podal_coords, O1_coord, O2_coord, Si1_coord, Si2_coord
 
     return reordered
 
-def permute_podal_atoms(pair_type, podal_coords=None, F_capping=False):
+def permute_podal_atoms(pair_type, podal_coords=None, F_capping=True):
 
     permutes = []
 
