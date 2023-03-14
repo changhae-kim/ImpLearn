@@ -19,10 +19,20 @@ class Gaussian():
             transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)}
             ):
 
-        if isinstance(which, int):
+        if isinstance(which, int)
             self.structures = [[read(file_path, which, file_type)] for file_path in file_paths]
-        else:
+        elif isinstance(which, str):
             self.structures = [read(file_path, which, file_type) for file_path in file_paths]
+        elif isinstance(which, list):
+            self.structures = [read(file_path, ':', file_type) for file_path in file_paths]
+            if isinstance(which[0], int):
+                self.structures = [[structures[i] for i in which] for structures in self.structures]
+            elif isinstance(which[0], list):
+                self.structures = [[structures[i] for i in whi] for whi, structures in zip(which, self.structures)]
+            else:
+                exit('not sure which structures to take')
+        else:
+            exit('not sure which structures to take')
 
         self.prefixes = prefixes
 
