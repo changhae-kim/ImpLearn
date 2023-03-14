@@ -36,6 +36,9 @@ class xTB():
         self.labels = [[] for i in range(n_struct)]
         self.workspaces = [[] for i in range(n_struct)]
 
+        self.clusters = [[] for i in range(n_struct)]
+        self.energies = [[] for i in range(n_struct)]
+
         return
 
     def setup(self):
@@ -100,8 +103,36 @@ export OMP_NUM_THREADS={n_proc:d},1
                         os.system('/bin/bash xtb.sh')
                         os.chdir(cwd)
 
-                if not os.path.exists(output):
+                if os.path.exists(output):
+                    energy, cluster = get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
+                    self.energies[i].append(energy)
+                    self.clusters[i].append(cluster)
+                else:
                     print(workspace, 'No output')
 
         return
+
+    def get_cluster(file_path):
+        energy = None
+        clsuter = None
+        f = open(file_path, 'rt')
+        status = 0
+        n_atoms = 0
+        for line in f:
+            if status == 0:
+                n_atoms = int(line)
+                atoms = []
+                coords = []
+                status = 1
+            elif status == 1:
+                energy = float(line.split()[1])
+                status = 2
+            elif status == 2:
+                atoms.append(line.split()[0])
+                coords.append([float(x) for x in line.split()[1:]])
+                if len(atoms) >= n_atoms:
+                    cluster = Atoms(atoms, coords)
+                    status = 0
+        f.close()
+        return energy, cluster
 
