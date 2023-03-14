@@ -86,9 +86,9 @@ class Crest():
 
                 os.chdir(cwd)
 
-            if label not in labels:
+            if label not in self.labels:
                 self.labels.append(label)
-            if workspace not in workspaces:
+            if workspace not in self.workspaces:
                 self.workspaces.append(workspace)
 
         return
