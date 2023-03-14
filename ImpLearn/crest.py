@@ -1,5 +1,7 @@
 import os
 
+from ase import Atoms
+
 
 def check_normal_termination(file_path):
     last_line = ''
@@ -11,6 +13,30 @@ def check_normal_termination(file_path):
         return True
     else:
         return False
+
+def read_conformers(file_path):
+    energies = []
+    clsuters = []
+    f = open(file_path, 'rt')
+    status = 0
+    n_atoms = 0
+    for line in f:
+        if status == 0:
+            n_atoms = int(line)
+            atoms = []
+            coords = []
+            status = 1
+        elif status == 1:
+            energies.append(float(line.split()[0]))
+            status = 2
+        elif status == 2:
+            atoms.append(line.split()[0])
+            coords.append([float(x) for x in line.split()[1:]])
+            if len(atoms) >= n_atoms:
+                clusters.append(Atoms(atoms, coords))
+                status = 0
+    f.close()
+    return energies, clusters
 
 
 class Crest():
@@ -45,6 +71,11 @@ class Crest():
 
         self.labels = []
         self.workspaces = []
+
+        self.conformers = []
+        self.conformer_energies = []
+        self.rotamers = []
+        self.rotamer_energies = []
 
         return
 
@@ -109,7 +140,10 @@ class Crest():
 
             if os.path.exists(output):
                 status = check_normal_termination(output)
-                if status == False:
+                if status == True:
+                    self.conformer_energies, self.conformers = read_conformers(os.path.join(self.workspaces[i], 'crest_conformers.xyz'))
+                    self.rotamer_energies, self.rotamers = read_conformers(os.path.join(self.workspaces[i], 'crest_rotamers.xyz'))
+                else:
                     print(self.workspaces[i], 'Error termination')
             else:
                 print(self.workspaces[i], 'No output')
