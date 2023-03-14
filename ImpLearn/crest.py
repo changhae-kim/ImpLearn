@@ -1,4 +1,3 @@
-import numpy
 import os
 
 
@@ -19,7 +18,7 @@ class Crest():
     def __init__(self, file_paths, prefix,
             charges=0, mults=3,
             n_proc=24,
-            constraints='$constrain\n  atoms: 1-4\n  force constant=10.0\n  reference=coord.ref\n$metadyn\n  atoms: 5-11\n$end\n'
+            constraints='$constrain\n  atoms: 1-4\n  force constant=0.5\n  reference=coord.ref\n$metadyn\n  atoms: 5-11\n$end\n'
             ):
 
         self.file_paths = file_paths
@@ -72,7 +71,6 @@ class Crest():
 
                 os.mkdir(workspace)
                 os.system('cp {:s} {:s}'.format(self.file_paths[i], workspace))
-
                 os.chdir(workspace)
 
                 os.system('crest {:s} --constrain 1-4 >/dev/null 2>&1'.format(file_name))
@@ -88,8 +86,9 @@ class Crest():
 
                 os.chdir(cwd)
 
-            if len(self.labels) < n_struct:
+            if label not in labels:
                 self.labels.append(label)
+            if workspace not in workspaces:
                 self.workspaces.append(workspace)
 
         return
@@ -98,6 +97,7 @@ class Crest():
 
         n_struct = len(self.file_paths)
         for i in range(n_struct):
+
             output = os.path.join(self.workspaces[i], 'crest.log')
 
             if not os.path.exists(output):
