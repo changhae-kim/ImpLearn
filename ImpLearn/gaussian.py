@@ -1,4 +1,3 @@
-import numpy
 import os
 
 from ase import Atoms
@@ -9,7 +8,7 @@ from .gaussian_tools import check_normal_termination, read_geom_opt, read_thermo
 
 class Gaussian():
 
-    def __init__(self, structure_file_paths, gaussian_prefixes,
+    def __init__(self, file_paths, prefixes,
             file_type='xyz',
             structure_types='EQ',
             charges=0, mults=4,
@@ -20,8 +19,8 @@ class Gaussian():
             transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)}
             ):
 
-        self.structures = [read(file_path, ':', file_type) for file_path in structure_file_paths]
-        self.gaussian_prefixes = gaussian_prefixes
+        self.structures = [read(file_path, ':', file_type) for file_path in file_paths]
+        self.prefixes = prefixes
 
         n_struct = len(self.structures)
 
@@ -81,12 +80,12 @@ class Gaussian():
         for i in range(n_struct):
             n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
-                optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.gaussian_prefixes[i], j)
+                optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.prefixes[i], j)
                 if self.structure_types[i].upper() == 'TS':
                     self.setup_transition_state_optimization(i, optimizer, self.structures[i][j])
                 else:
                     self.setup_geometry_optimization(i, optimizer, self.structures[i][j])
-                if len(self.optimizers[i]) < len(self.structures[i]):
+                if optimizer not in self.optimizers[i]:
                     self.optimizers[i].append(optimizer)
         return self.optimizers
 
