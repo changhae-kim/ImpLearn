@@ -221,18 +221,15 @@ class Gaussian():
 
         if temps is None:
             temps = self.temps
-        elif isinstance(temps, int):
+        elif isinstance(temps, float):
             temps = [temps] * n_struct
+        else:
+            temps = temps
 
         if pressure is None:
             pressure = self.pressure
-        elif pressure != self.pressure:
-            self.pressure = pressure
-
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
-        elif vib_cutoff != self.vib_cutoff:
-            self.vib_cutoff = vib_cutoff
 
         self.gibbs_energies = [[] for i in range(n_struct)]
         self.enthalpies = [[] for i in range(n_struct)]
