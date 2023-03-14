@@ -9,7 +9,7 @@ from .gaussian_tools import check_normal_termination, read_geom_opt, read_thermo
 class Gaussian():
 
     def __init__(self, file_paths, prefixes,
-            file_type='xyz',
+            which=':', file_type='xyz',
             structure_types='EQ',
             charges=0, mults=4,
             temps=373.15, pressure=1.0, vib_cutoff=100.0,
@@ -19,7 +19,11 @@ class Gaussian():
             transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)}
             ):
 
-        self.structures = [read(file_path, ':', file_type) for file_path in file_paths]
+        if isinstance(which, int):
+            self.structures = [[read(file_path, which, file_type)] for file_path in file_paths]
+        else:
+            self.structures = [read(file_path, which, file_type) for file_path in file_paths]
+
         self.prefixes = prefixes
 
         n_struct = len(self.structures)
