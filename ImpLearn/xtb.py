@@ -47,7 +47,7 @@ class xTB():
 #$ -pe default {n_proc:d}
 
 export OMP_NUM_THREADS={n_proc:d},1
-/home/cakim2/conda/envs/petersgroup/bin/xtb struc.xyz --chrg {charge:d} --uhf {mult:d} --cinp constraints.inp >xtb.log 2>&1
+/home/cakim2/conda/envs/petersgroup/bin/xtb inp.xyz --chrg {charge:d} --uhf {mult:d} --opt vtight --input xtb.inp >xtb.log 2>&1
 
 '''
 
@@ -101,7 +101,7 @@ export OMP_NUM_THREADS={n_proc:d},1
                         os.chdir(cwd)
 
                 if not os.path.exists(output):
-                    print(self.workspaces[i], 'No output')
+                    print(workspace, 'No output')
 
-           return
+        return
 
