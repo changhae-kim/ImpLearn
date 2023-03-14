@@ -16,7 +16,7 @@ def check_normal_termination(file_path):
 
 def get_conformers(file_path):
     energies = []
-    clsuters = []
+    clusters = []
     f = open(file_path, 'rt')
     status = 0
     n_atoms = 0
