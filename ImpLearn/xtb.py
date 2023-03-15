@@ -187,7 +187,7 @@ export OMP_NUM_THREADS={n_proc:d},1
             if reorder:
                 iterator = numpy.argsort(self.energies[i])
             else:
-                iterator = [m for m, _ enumerate(self.energies[i])]
+                iterator = [m for m, _ enumerate(self.energies[i], kind='mergesort')]
             for m in iterator:
                 if self.energies[i][m] > min(self.energies[i]) + e_window:
                     continue
