@@ -36,7 +36,8 @@ class xTB():
             constraints='$fix\n  atoms: 1-4\n$constrain\n  force constant=0.5\n  distance: 10, 11, auto\n$end\n',
             ewin=0.009561608625843094, rthr=0.125,
             exclude_atoms=[0, 1, 2, 3],
-            exclude_elements='H'
+            exclude_elements='H',
+            degeneracies=1
             ):
 
         self.file_paths = file_paths
@@ -76,6 +77,11 @@ class xTB():
 
         self.labels = [[] for i in range(n_struct)]
         self.workspaces = [[] for i in range(n_struct)]
+
+        if isinstance(degeneracies, int):
+            self.degeneracies = [degeneracies for i in range(n_struct)]
+        else:
+            self.degeneracies = degeneracies
 
         self.clusters = [[] for i in range(n_struct)]
         self.energies = [[] for i in range(n_struct)]
@@ -172,9 +178,10 @@ export OMP_NUM_THREADS={n_proc:d},1
 
         n_struct = len(self.file_paths)
         for i in range(n_struct):
+            sorted_degeneracies = []
             sorted_energies = []
             sorted_clusters = []
-            for energy, m, cluster in sorted(zip(self.energies[i], list(range(len(self.clusters[i]))), self.clusters[i])):
+            for energy, m, cluster, degeneracy in sorted(zip(self.energies[i], list(range(len(self.clusters[i]))), self.clusters[i], self.degeneracies[i])):
                 if energy > min(self.energies[i]) + ewin:
                     continue
                 status = True
@@ -188,10 +195,12 @@ export OMP_NUM_THREADS={n_proc:d},1
                         break
                 if not status:
                     continue
+                sorted_degeneracies.append(degeneracy)
                 sorted_energies.append(energy)
                 sorted_clusters.append(cluster)
+            self.degeneracies[i] = sorted_degeneracies
             self.energies[i] = sorted_energies
-            self.clsuters[i] = sorted_clusters
+            self.clusters[i] = sorted_clusters
 
         return
 
