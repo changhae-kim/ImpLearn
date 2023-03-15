@@ -36,7 +36,7 @@ class xTB():
             charges=0, mults=3,
             n_proc=24,
             constraints='$fix\n  atoms: 1-4\n$constrain\n  force constant=0.5\n  distance: 10, 11, auto\n$end\n',
-            ewin=0.009561608625843094, rthr=0.125,
+            e_window=0.009561608625843094, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
             degeneracies=1
@@ -64,8 +64,8 @@ class xTB():
         else:
             self.constraints = constraints
 
-        self.ewin = ewin
-        self.rthr = rthr
+        self.e_window = e_window
+        self.r_thresh = r_thresh
 
         if isinstance(exclude_atoms[0], int):
             self.exclude_atoms = [exclude_atoms] * n_struct
@@ -161,12 +161,12 @@ export OMP_NUM_THREADS={n_proc:d},1
 
         return
 
-    def sort(self, ewin=None, rthr=None, exclude_atoms=None, exclude_elements=None):
+    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None):
 
-        if ewin is None:
-            ewin = self.ewin
-        if rthr is None:
-            rthr = self.rthr
+        if e_window is None:
+            e_window = self.e_window
+        if r_thresh is None:
+            r_thresh = self.r_thresh
 
         if exclude_atoms is None:
             exclude_atoms = self.exclude_atoms
@@ -184,7 +184,7 @@ export OMP_NUM_THREADS={n_proc:d},1
             sorted_energies = []
             sorted_clusters = []
             for energy, m, cluster, degeneracy in sorted(zip(self.energies[i], list(range(len(self.clusters[i]))), self.clusters[i], self.degeneracies[i])):
-                if energy > min(self.energies[i]) + ewin:
+                if energy > min(self.energies[i]) + e_window:
                     continue
                 status = True
                 for sorted_cluster in sorted_clusters:
@@ -192,7 +192,7 @@ export OMP_NUM_THREADS={n_proc:d},1
                     coords = cluster.get_positions()
                     sorted_coords = sorted_cluster.get_positions()
                     indices = [j for j, X in enumerate(atoms) if j not in exclude_atoms[i] and X not in exclude_elements[i]]
-                    if numpy.sqrt(numpy.mean((coords[indices]-sorted_coords[indices])**2)) < rthr:
+                    if numpy.sqrt(numpy.mean((coords[indices]-sorted_coords[indices])**2)) < r_thresh:
                         status = False
                         break
                 if not status:
