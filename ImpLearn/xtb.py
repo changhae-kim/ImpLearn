@@ -77,14 +77,13 @@ class xTB():
         else:
             self.exclude_elements = exclude_elements
 
-        self.labels = [[] for i in range(n_struct)]
-        self.workspaces = [[] for i in range(n_struct)]
-
         if isinstance(degeneracies, int):
             self.degeneracies = [degeneracies for i in range(n_struct)]
         else:
             self.degeneracies = degeneracies
 
+        self.labels = [[] for i in range(n_struct)]
+        self.workspaces = [[] for i in range(n_struct)]
         self.clusters = [[] for i in range(n_struct)]
         self.energies = [[] for i in range(n_struct)]
 
@@ -181,15 +180,17 @@ export OMP_NUM_THREADS={n_proc:d},1
         n_struct = len(self.file_paths)
         for i in range(n_struct):
             sorted_degeneracies = []
+            sorted_labels = []
+            sorted_workspaces = []
             sorted_energies = []
             sorted_clusters = []
-            for energy, m, cluster, degeneracy in sorted(zip(self.energies[i], list(range(len(self.clusters[i]))), self.clusters[i], self.degeneracies[i])):
-                if energy > min(self.energies[i]) + e_window:
+            for m in numpy.argsort(self.energies[i]):
+                if self.energies[i][m] > min(self.energies[i]) + e_window:
                     continue
                 status = True
                 for sorted_cluster in sorted_clusters:
-                    atoms = cluster.get_chemical_symbols()
-                    coords = cluster.get_positions()
+                    atoms = self.clusters[i][m].get_chemical_symbols()
+                    coords = self.clusters[i][m].get_positions()
                     sorted_coords = sorted_cluster.get_positions()
                     indices = [j for j, X in enumerate(atoms) if j not in exclude_atoms[i] and X not in exclude_elements[i]]
                     if numpy.sqrt(numpy.mean((coords[indices]-sorted_coords[indices])**2)) < r_thresh:
@@ -197,10 +198,14 @@ export OMP_NUM_THREADS={n_proc:d},1
                         break
                 if not status:
                     continue
-                sorted_degeneracies.append(degeneracy)
-                sorted_energies.append(energy)
-                sorted_clusters.append(cluster)
+                sorted_labels.append(self.labels[i][m])
+                sorted_workspaces.append(self.workspaces[i][m])
+                sorted_degeneracies.append(self.degeneracies[i][m])
+                sorted_energies.append(self.energies[i][m])
+                sorted_clusters.append(self.clusters[i][m])
             self.degeneracies[i] = sorted_degeneracies
+            self.labels[i] = sorted_labels
+            self.workspaces[i] = sorted_workspaces
             self.energies[i] = sorted_energies
             self.clusters[i] = sorted_clusters
 
