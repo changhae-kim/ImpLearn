@@ -198,9 +198,9 @@ export OMP_NUM_THREADS={n_proc:d},1
                         break
                 if not status:
                     continue
+                sorted_degeneracies.append(self.degeneracies[i][m])
                 sorted_labels.append(self.labels[i][m])
                 sorted_workspaces.append(self.workspaces[i][m])
-                sorted_degeneracies.append(self.degeneracies[i][m])
                 sorted_energies.append(self.energies[i][m])
                 sorted_clusters.append(self.clusters[i][m])
             self.degeneracies[i] = sorted_degeneracies
