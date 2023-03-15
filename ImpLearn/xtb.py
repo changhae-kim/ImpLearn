@@ -1,9 +1,11 @@
+import numpy
 import os
 
+from ase import Atoms
 from ase.io import read, write
 
 
-def get_cluster(self, file_path):
+def get_cluster(file_path):
     energy = None
     clsuter = None
     f = open(file_path, 'rt')
@@ -151,7 +153,7 @@ export OMP_NUM_THREADS={n_proc:d},1
                         os.chdir(cwd)
 
                 if os.path.exists(output):
-                    energy, cluster = self.get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
+                    energy, cluster = get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
                     self.energies[i].append(energy)
                     self.clusters[i].append(cluster)
                 else:
