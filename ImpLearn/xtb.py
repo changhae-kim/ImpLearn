@@ -160,7 +160,7 @@ export OMP_NUM_THREADS={n_proc:d},1
 
         return
 
-    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None):
+    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
 
         if e_window is None:
             e_window = self.e_window
@@ -184,7 +184,11 @@ export OMP_NUM_THREADS={n_proc:d},1
             sorted_workspaces = []
             sorted_energies = []
             sorted_clusters = []
-            for m in numpy.argsort(self.energies[i]):
+            if reorder:
+                iterator = numpy.argsort(self.energies[i])
+            else:
+                iterator = [m for m, _ enumerate(self.energies[i])]
+            for m in iterator:
                 if self.energies[i][m] > min(self.energies[i]) + e_window:
                     continue
                 status = True
