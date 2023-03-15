@@ -38,6 +38,27 @@ def get_conformers(file_path):
     f.close()
     return energies, clusters
 
+def get_degeneracies(file_path):
+    degeneracies = []
+    f = open(file_path, 'rt')
+    status = 0
+    n_conf = 0
+    for line in f:
+        if status == 0:
+            if line.strip().startswith('total number unique points'):
+                n_conf = int(line.split()[-1])
+                status = 1
+        elif status == 1:
+            status = 2
+        elif status == 2:
+            row = line.split()
+            if len(row) == 8:
+                degeneracies.append(int(row[6]))
+            if int(row[0]) == n_conf:
+                break
+    f.close()
+    return degeneracies
+
 
 class Crest():
 
@@ -72,6 +93,7 @@ class Crest():
         self.labels = []
         self.workspaces = []
 
+        self.degeneracies = [[] for i in range(n_struct)]
         self.conformers = [[] for i in range(n_struct)]
         self.conformer_energies = [[] for i in range(n_struct)]
         self.rotamers = [[] for i in range(n_struct)]
@@ -141,6 +163,7 @@ class Crest():
             if os.path.exists(output):
                 status = check_normal_termination(output)
                 if status == True:
+                    self.degeneracies[i] = get_degeneracies(output)
                     self.conformer_energies[i], self.conformers[i] = get_conformers(os.path.join(self.workspaces[i], 'crest_conformers.xyz'))
                     self.rotamer_energies[i], self.rotamers[i] = get_conformers(os.path.join(self.workspaces[i], 'crest_rotamers.xyz'))
                 else:
