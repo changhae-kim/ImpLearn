@@ -16,7 +16,11 @@ class Gaussian():
             n_proc=24, method='wB97XD', basis='Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****\nF 0\n3-21G\n****',
             frozen_atoms=[0, 1, 2, 3],
-            transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)}
+            transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)},
+            e_window=0.009561608625843094, r_thresh=0.125,
+            exclude_atoms=[0, 1, 2, 3],
+            exclude_elements='H',
+            degeneracies=1
             ):
 
         if isinstance(which, int):
@@ -79,6 +83,24 @@ class Gaussian():
             self.transition_state_criteria = [transition_state_criteria if self.structure_types[i].upper() == 'TS' else {} for i in range(n_struct)]
         else:
             self.transition_state_criteria = transition_state_criteria
+
+        self.e_window = e_window
+        self.r_thresh = r_thresh
+
+        if isinstance(exclude_atoms[0], int):
+            self.exclude_atoms = [exclude_atoms] * n_struct
+        else:
+            self.exclude_atoms = exclude_atoms
+
+        if isinstance(exclude_elements, str):
+            self.exclude_elements = [exclude_elements] * n_struct
+        else:
+            self.exclude_elements = exclude_elements
+
+        if isinstance(degeneracies, int):
+            self.degeneracies = [degeneracies for i in range(n_struct)]
+        else:
+            self.degeneracies = degeneracies
 
         self.optimizers = [[] for i in range(n_struct)]
         self.energies = [[] for i in range(n_struct)]
@@ -241,15 +263,15 @@ class Gaussian():
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        self.gibbs_energies = [[] for i in range(n_struct)]
         self.enthalpies = [[] for i in range(n_struct)]
         self.entropies = [[] for i in range(n_struct)]
+        self.gibbs_energies = [[] for i in range(n_struct)]
         for i in range(n_struct):
             for optimizer in self.optimizers[i]:
                 E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressure, vib_cutoff=vib_cutoff, verbose=True)
-                self.gibbs_energies[i].append(G)
                 self.enthalpies[i].append(H)
                 self.entropies[i].append(S)
+                self.gibbs_energies[i].append(G)
 
         return
 
@@ -307,4 +329,56 @@ class Gaussian():
             self.get_thermodynamics(temps, pressure, vib_cutoff)
 
         return entropies
+
+    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=False):
+
+        if e_window is None:
+            e_window = self.e_window
+        if r_thresh is None:
+            r_thresh = self.r_thresh
+
+        if exclude_atoms is None:
+            exclude_atoms = self.exclude_atoms
+        elif isinstance(exclude_atoms[0], int):
+            exclude_atoms = [exclude_atoms] * n_struct
+
+        if exclude_elements is None:
+            exclude_elements = self.exclude_elements
+        elif isinstance(exclude_elements, str):
+            exclude_elements = [exclude_elements] * n_struct
+
+        n_struct = len(self.file_paths)
+        for i in range(n_struct):
+            sorted_degeneracies = []
+            sorted_optimizers = []
+            sorted_energies = []
+            sorted_clusters = []
+            if reorder:
+                iterator = numpy.argsort(self.energies[i], kind='stable')
+            else:
+                iterator = [m for m, _ in enumerate(self.energies[i])]
+            for m in iterator:
+                if self.energies[i][m] > min(self.energies[i]) + e_window:
+                    continue
+                status = True
+                for sorted_cluster in sorted_clusters:
+                    atoms = self.clusters[i][m].get_chemical_symbols()
+                    coords = self.clusters[i][m].get_positions()
+                    sorted_coords = sorted_cluster.get_positions()
+                    indices = [j for j, X in enumerate(atoms) if j not in exclude_atoms[i] and X not in exclude_elements[i]]
+                    if numpy.sqrt(numpy.mean((coords[indices]-sorted_coords[indices])**2)) < r_thresh:
+                        status = False
+                        break
+                if not status:
+                    continue
+                sorted_degeneracies.append(self.degeneracies[i][m])
+                sorted_optimizers.append(self.optimizers[i][m])
+                sorted_energies.append(self.energies[i][m])
+                sorted_clusters.append(self.clusters[i][m])
+            self.degeneracies[i] = sorted_degeneracies
+            self.optimizers[i] = sorted_optimizers
+            self.energies[i] = sorted_energies
+            self.clusters[i] = sorted_clusters
+
+        return
 
