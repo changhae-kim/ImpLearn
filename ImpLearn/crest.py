@@ -55,7 +55,7 @@ def get_degeneracies(file_path):
             if len(row) == 8:
                 degeneracies.append(int(row[6]))
             if int(row[0]) == n_conf:
-                break
+                status = 0
     f.close()
     return degeneracies
 
