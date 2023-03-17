@@ -52,7 +52,7 @@ def get_degeneracies(file_path):
             status = 2
         elif status == 2:
             row = line.split()
-            if len(row) == 8:
+            if len(row) > 6:
                 degeneracies.append(int(row[6]))
             if int(row[0]) == n_conf:
                 status = 0
