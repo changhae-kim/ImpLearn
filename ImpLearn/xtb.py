@@ -5,6 +5,16 @@ from ase import Atoms
 from ase.io import read, write
 
 
+def check_normal_termination(file_path):
+    status = False
+    f = open(file_path,'rt')
+    for line in f:
+        if line.strip().startswith('normal termination of xtb'):
+            status = True
+            break
+    f.close()
+    return status
+
 def get_cluster(file_path):
     energy = None
     clsuter = None
@@ -152,9 +162,13 @@ export OMP_NUM_THREADS={n_proc:d},1
                         os.chdir(cwd)
 
                 if os.path.exists(output):
-                    energy, cluster = get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
-                    self.energies[i].append(energy)
-                    self.clusters[i].append(cluster)
+                    status = check_normal_termination(output)
+                    if status == True:
+                        energy, cluster = get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
+                        self.energies[i].append(energy)
+                        self.clusters[i].append(cluster)
+                    else:
+                        print(workspace, 'Error termination')
                 else:
                     print(workspace, 'No output')
 
