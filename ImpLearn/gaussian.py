@@ -80,7 +80,7 @@ class Gaussian():
             self.frozen_atoms = frozen_atoms
 
         if isinstance(transition_state_criteria, dict):
-            self.transition_state_criteria = [transition_state_criteria if self.structure_types[i].upper() == 'TS' else {} for i in range(n_struct)]
+            self.transition_state_criteria = [transition_state_criteria] * n_struct
         else:
             self.transition_state_criteria = transition_state_criteria
 
@@ -98,7 +98,9 @@ class Gaussian():
             self.exclude_elements = exclude_elements
 
         if isinstance(degeneracies, int):
-            self.degeneracies = [degeneracies for i in range(n_struct)]
+            self.degeneracies = [[degeneracies] for i in range(n_struct)]
+        elif isinstance(degeneracies[0], int):
+            self.degeneracies = [[g for g in degeneracies] for i in range(n_struct)]
         else:
             self.degeneracies = degeneracies
 
