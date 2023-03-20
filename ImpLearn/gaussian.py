@@ -1,3 +1,4 @@
+import numpy
 import os
 
 from ase import Atoms
@@ -349,7 +350,7 @@ class Gaussian():
         elif isinstance(exclude_elements, str):
             exclude_elements = [exclude_elements] * n_struct
 
-        n_struct = len(self.file_paths)
+        n_struct = len(self.structures)
         for i in range(n_struct):
             sorted_degeneracies = []
             sorted_optimizers = []
@@ -381,6 +382,7 @@ class Gaussian():
             self.optimizers[i] = sorted_optimizers
             self.energies[i] = sorted_energies
             self.clusters[i] = sorted_clusters
+        self.get_thermodynamics()
 
         return
 
