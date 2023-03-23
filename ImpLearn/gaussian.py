@@ -468,7 +468,8 @@ class Gaussian():
             self.optimizers[i] = sorted_optimizers
             self.energies[i] = sorted_energies
             self.clusters[i] = sorted_clusters
-        self.get_thermodynamics()
+        if not self.gibbs_energies == [[] for i in range(n_struct)]:
+            self.get_thermodynamics()
 
         return
 
