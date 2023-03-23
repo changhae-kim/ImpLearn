@@ -14,11 +14,12 @@ class Gaussian():
             structure_types='EQ',
             charges=0, mults=4,
             temps=373.15, pressure=1.0, vib_cutoff=100.0,
-            n_proc=24, method='wB97XD', basis='Gen',
+            n_proc=24, method='wB97XD/Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****\nF 0\n3-21G\n****',
+            opt_thresh='Normal',
             frozen_atoms=[0, 1, 2, 3],
             transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)},
-            e_window=0.009561608625843094, r_thresh=0.125,
+            e_window=0.00956161, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
             degeneracies=1
@@ -58,7 +59,7 @@ class Gaussian():
         else:
             self.mults = mults
 
-        if isinstance(temps, int):
+        if isinstance(temps, float):
             self.temps = [temps] * n_struct
         else:
             self.temps = temps
@@ -68,14 +69,15 @@ class Gaussian():
 
         self.n_proc = n_proc
         self.method = method
-        self.basis = basis
 
         if isinstance(gen_basis, str):
             self.gen_basis = [gen_basis] * n_struct
         else:
             self.gen_basis = gen_basis
 
-        if isinstance(frozen_atoms[0], int):
+        self.opt_thresh = opt_thresh
+
+        if frozen_atoms == [] or isinstance(frozen_atoms[0], int):
             self.frozen_atoms = [frozen_atoms] * n_struct
         else:
             self.frozen_atoms = frozen_atoms
@@ -88,12 +90,16 @@ class Gaussian():
         self.e_window = e_window
         self.r_thresh = r_thresh
 
-        if isinstance(exclude_atoms[0], int):
+        if isinstance(exclude_atoms, int):
+            self.exclude_atoms = [[exclude_atoms]] * n_struct
+        elif exclude_atoms == [] or isinstance(exclude_atoms[0], int):
             self.exclude_atoms = [exclude_atoms] * n_struct
         else:
             self.exclude_atoms = exclude_atoms
 
         if isinstance(exclude_elements, str):
+            self.exclude_elements = [[exclude_elements]] * n_struct
+        elif exclude_elements == [] or isinstance(exclude_elements[0], str):
             self.exclude_elements = [exclude_elements] * n_struct
         else:
             self.exclude_elements = exclude_elements
@@ -122,6 +128,8 @@ class Gaussian():
                 optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.prefixes[i], j)
                 if self.structure_types[i].upper() == 'TS':
                     self.setup_transition_state_optimization(i, optimizer, self.structures[i][j])
+                if self.structure_types[i].upper() == 'CONST':
+                    self.setup_constrained_optimization(i, optimizer, self.structures[i][j])
                 else:
                     self.setup_geometry_optimization(i, optimizer, self.structures[i][j])
                 if optimizer not in self.optimizers[i]:
@@ -133,13 +141,29 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
+        if self.opt_thresh == 'NoOpt':
+            opt = ''
+        elif self.opt_thresh == 'Loose':
+            opt = 'Int=SG1 Opt=(Loose,MaxCycles=200) '
+        elif self.opt_thresh == 'Tight':
+            opt = 'Int=UltraFine Opt=(Tight,MaxCycles=200) '
+        elif self.opt_thresh == 'VeryTight':
+            opt = 'Int=UltraFine Opt=(VeryTight,MaxCycles=200) '
+        else:
+            opt = 'Opt=(MaxCycles=200) '
+
+        if self.temps[state] == 0.0 or self.pressure == 0.0:
+            freq = ''
+        else:
+            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressure)
+
         header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
+#n {method:s} NoSymm SCF=XQC {opt:s}{freq:s}
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state], temp=self.temps[state], pressure=self.pressure)
+'''.format(n_proc=self.n_proc, method=self.method, opt=opt, freq=freq, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state])
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms[state]:
@@ -148,7 +172,53 @@ class Gaussian():
                 atom_type = 0
             body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
-        if self.basis.upper() in ['GEN', 'GENECP']:
+        if self.gen_basis[state] != '':
+            footer += self.gen_basis[state] + '\n\n'
+
+        if not os.path.exists('{:s}.com'.format(optimizer)):
+            f = open('{:s}.com'.format(optimizer), 'wt')
+            f.write(header + body + footer)
+            f.close()
+
+        return
+
+    def setup_constrained_optimization(self, state, optimizer, cluster):
+
+        atoms = cluster.get_chemical_symbols()
+        coords = cluster.get_positions()
+
+        if self.opt_thresh == 'NoOpt':
+            opt = ''
+        elif self.opt_thresh == 'Loose':
+            opt = 'Int=SG1 Opt=(Loose,GIC,ModRedundant,MaxCycles=200) '
+        elif self.opt_thresh == 'Tight':
+            opt = 'Int=UltraFine Opt=(Tight,GIC,ModRedundant,MaxCycles=200) '
+        elif self.opt_thresh == 'VeryTight':
+            opt = 'Int=UltraFine Opt=(VeryTight,GIC,ModRedundant,MaxCycles=200) '
+        else:
+            opt = 'Opt=(GIC,ModRedundant,MaxCycles=200) '
+
+        if self.temps[state] == 0.0 or self.pressure == 0.0:
+            freq = ''
+        else:
+            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressure)
+
+        header = '''%NProcShared={n_proc:d}
+#n {method:s} NoSymm SCF=XQC {opt:s}{freq:s}
+
+ {label:s}
+
+{charge:d} {mult:d}
+'''.format(n_proc=self.n_proc, method=self.method, opt=opt, freq=freq, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state])
+        body = ''
+        for j, (X, coord) in enumerate(zip(atoms, coords)):
+            if j in self.frozen_atoms[state]:
+                atom_type = -1
+            else:
+                atom_type = 0
+            body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
+        footer = '\n'
+        if self.gen_basis[state] != '':
             footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(optimizer)):
@@ -163,13 +233,29 @@ class Gaussian():
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
 
+        if self.opt_thresh == 'NoOpt':
+            opt = ''
+        elif self.opt_thresh == 'Loose':
+            opt = 'Int=SG1 Opt=(Loose,TS,CalcFC,NoEigen,MaxCycles=200) '
+        elif self.opt_thresh == 'Tight':
+            opt = 'Int=UltraFine Opt=(Tight,TS,CalcFC,NoEigen,MaxCycles=200) '
+        elif self.opt_thresh == 'VeryTight':
+            opt = 'Int=UltraFine Opt=(VeryTight,TS,CalcFC,NoEigen,MaxCycles=200) '
+        else:
+            opt = 'Opt=(TS,CalcFC,NoEigen,MaxCycles=200) '
+
+        if self.temps[state] == 0.0 or self.pressure == 0.0:
+            freq = ''
+        else:
+            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressure)
+
         header = '''%NProcShared={n_proc:d}
-#n {method:s}/{basis:s} NoSymm SCF=XQC Opt=(TS,CalcFC,NoEigen,MaxCycles=200) Freq Temp={temp:.3f} Pressure={pressure:.5f}
+#n {method:s} NoSymm SCF=XQC {opt:s}{freq:s}
 
  {label:s}
 
 {charge:d} {mult:d}
-'''.format(n_proc=self.n_proc, method=self.method, basis=self.basis, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state], temp=self.temps[state], pressure=self.pressure)
+'''.format(n_proc=self.n_proc, method=self.method, opt=opt, freq=freq, label=os.path.basename(optimizer), charge=self.charges[state], mult=self.mults[state])
         body = ''
         for j, (X, coord) in enumerate(zip(atoms, coords)):
             if j in self.frozen_atoms[state]:
@@ -178,7 +264,7 @@ class Gaussian():
                 atom_type = 0
             body += '{X:2s} {t:2d} {x:9f} {y:9f} {z:9f}\n'.format(X=X, t=atom_type, x=coord[0], y=coord[1], z=coord[2])
         footer = '\n'
-        if self.basis.upper() in ['GEN', 'GENECP']:
+        if self.gen_basis[state] != '':
             footer += self.gen_basis[state] + '\n\n'
 
         if not os.path.exists('{:s}.com'.format(optimizer)):
