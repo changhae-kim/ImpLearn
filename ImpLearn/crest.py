@@ -63,7 +63,7 @@ def get_degeneracies(file_path):
 class Crest():
 
     def __init__(self, file_paths, prefix,
-            charges=0, mults=3,
+            charges=0, spins=3,
             n_proc=24,
             constraints='$constrain\n  atoms: 1-4\n  force constant=0.5\n  reference=coord.ref\n$metadyn\n  atoms: 5-11\n$end\n'
             ):
@@ -78,10 +78,10 @@ class Crest():
         else:
             self.charges = charges
 
-        if isinstance(mults, int):
-            self.mults = [mults] * n_struct
+        if isinstance(spins, int):
+            self.spins = [spins] * n_struct
         else:
-            self.mults = mults
+            self.spins = spins
 
         self.n_proc = n_proc
 
@@ -109,7 +109,7 @@ class Crest():
 #$ -N crest-{label:s}
 #$ -pe default {n_proc:d}
 
-/home/cakim2/conda/envs/petersgroup/bin/crest coord --T {n_proc:d} --chrg {charge:d} --uhf {mult:d} --cinp constraints.inp --subrmsd --noreftopo >crest.log 2>&1
+/home/cakim2/conda/envs/petersgroup/bin/crest coord --T {n_proc:d} --chrg {charge:d} --uhf {spin:d} --cinp constraints.inp --subrmsd --noreftopo >crest.log 2>&1
 
 '''
 
@@ -134,7 +134,7 @@ class Crest():
                 f.close()
 
                 f = open('crest.sh', 'wt')
-                f.write(script.format(label=label, n_proc=self.n_proc, charge=self.charges[i], mult=self.mults[i]))
+                f.write(script.format(label=label, n_proc=self.n_proc, charge=self.charges[i], spin=self.spins[i]))
                 f.close()
 
                 os.chdir(cwd)
