@@ -43,10 +43,11 @@ def get_cluster(file_path):
 class xTB():
 
     def __init__(self, file_paths, prefix,
-            charges=0, mults=3,
-            n_proc=24,
+            charges=0, spins=3,
+            n_proc=24, method='GFN2-xTB',
             constraints='$fix\n  atoms: 1-4\n$constrain\n  force constant=0.5\n  distance: 10, 11, auto\n$end\n',
-            e_window=0.009561608625843094, r_thresh=0.125,
+            opt_thresh='vtight',
+            e_window=0.00956161, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
             degeneracies=1
@@ -62,27 +63,34 @@ class xTB():
         else:
             self.charges = charges
 
-        if isinstance(mults, int):
-            self.mults = [mults] * n_struct
+        if isinstance(spins, int):
+            self.spins = [spins] * n_struct
         else:
-            self.mults = mults
+            self.spins = spins
 
         self.n_proc = n_proc
+        self.method = method
 
         if isinstance(constraints, str):
             self.constraints = [constraints] * n_struct
         else:
             self.constraints = constraints
 
+        self.opt_thresh = opt_thresh
+
         self.e_window = e_window
         self.r_thresh = r_thresh
 
-        if isinstance(exclude_atoms[0], int):
+        if isinstance(exclude_atoms, int):
+            self.exclude_atoms = [[exclude_atoms]] * n_struct
+        elif exclude_atoms == [] or isinstance(exclude_atoms[0], int):
             self.exclude_atoms = [exclude_atoms] * n_struct
         else:
             self.exclude_atoms = exclude_atoms
 
         if isinstance(exclude_elements, str):
+            self.exclude_elements = [[exclude_elements]] * n_struct
+        elif exclude_atoms == [] or isinstance(exclude_elements[0], str):
             self.exclude_elements = [exclude_elements] * n_struct
         else:
             self.exclude_elements = exclude_elements
@@ -108,9 +116,27 @@ class xTB():
 #$ -pe default {n_proc:d}
 
 export OMP_NUM_THREADS={n_proc:d},1
-/home/cakim2/conda/envs/petersgroup/bin/xtb inp.xyz --chrg {charge:d} --uhf {mult:d} --opt vtight --input xtb.inp >xtb.log 2>&1
+/home/cakim2/conda/envs/petersgroup/bin/xtb {method:s}inp.xyz --chrg {charge:d} --uhf {spin:d} {opt:s}{inp:s}>xtb.log 2>&1
 
 '''
+
+        if self.method == 'GFN0-xTB':
+            method = '--gfn 0 '
+        elif self.method == 'GFN1-xTB':
+            method = '--gfn 1 '
+        elif self.method == 'GFN-FF':
+            method = '--gfnff '
+        else:
+            method = ''
+
+        if self.opt_thresh == 'noopt':
+            opt = ''
+        elif self.opt_thresh == 'tight':
+            opt = '--opt tight '
+        elif self.opt_thresh == 'vtight':
+            opt = '--opt vtight '
+        else:
+            opt = '--opt '
 
         n_struct = len(self.file_paths)
         for i in range(n_struct):
@@ -129,12 +155,16 @@ export OMP_NUM_THREADS={n_proc:d},1
 
                     write('inp.xyz', clusters[j], 'xyz')
 
-                    f = open('xtb.inp', 'wt')
-                    f.write(self.constraints[i])
-                    f.close()
+                    if self.constraints[i] != '':
+                        f = open('xtb.inp', 'wt')
+                        f.write(self.constraints[i])
+                        f.close()
+                        inp = '--input xtb.inp '
+                    else:
+                        inp = ''
 
                     f = open('xtb.sh', 'wt')
-                    f.write(script.format(label=label, n_proc=self.n_proc, charge=self.charges[i], mult=self.mults[i]))
+                    f.write(script.format(label=label, n_proc=self.n_proc, method=method, charge=self.charges[i], spin=self.spins[i], opt=opt, inp=inp))
                     f.close()
 
                     os.chdir(cwd)
@@ -164,7 +194,17 @@ export OMP_NUM_THREADS={n_proc:d},1
                 if os.path.exists(output):
                     status = check_normal_termination(output)
                     if status == True:
-                        energy, cluster = get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
+                        if self.opt_thresh == 'noopt':
+                            energy = 0.0
+                            f = open(os.path.join(workspace, 'xtb.log'), 'rt')
+                            for line in f:
+                                if line.strip().startswith('| TOTAL ENERGY'):
+                                    energy = float(line.split()[-3])
+                                    break
+                            f.close()
+                            cluster = read(os.path.join(workspace, 'inp.xyz'), 0, 'xyz')
+                        else:
+                            energy, cluster = get_cluster(os.path.join(workspace, 'xtbopt.xyz'))
                         self.energies[i].append(energy)
                         self.clusters[i].append(cluster)
                     else:
