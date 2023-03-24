@@ -419,7 +419,7 @@ class Gaussian():
 
         return entropies
 
-    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=False):
+    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
 
         if e_window is None:
             e_window = self.e_window
@@ -468,7 +468,8 @@ class Gaussian():
             self.optimizers[i] = sorted_optimizers
             self.energies[i] = sorted_energies
             self.clusters[i] = sorted_clusters
-        if not self.gibbs_energies == [[] for i in range(n_struct)]:
+
+        if self.gibbs_energies != [[] for i in range(n_struct)]:
             self.get_thermodynamics()
 
         return
