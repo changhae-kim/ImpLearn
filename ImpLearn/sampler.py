@@ -36,16 +36,21 @@ class Sampler():
                 self.rng.seed(random_state)
 
             if replace:
-                candidates = [i for i in range(self.n_points) if i not in exclude]
-                samples = list(self.rng.choice(candidates, size=batch_size, replace=True, p=weights))
+                candidates = [i for i in range(self.n_points)]
+                new_samples = list(self.rng.choice(candidates, size=batch_size, replace=True, p=weights))
             else:
-                candidates = [i for i in range(self.n_points) if i not in self.samples and i not in exclude]
+                candidates = [i for i in range(self.n_points) if i not in self.samples]
                 if weights is None:
                     reweights = None
                 else:
                     reweights = numpy.array(weights)[candidates]
                     reweights = reweights / numpy.sum(reweights)
-                samples = list(self.rng.choice(candidates, size=batch_size, replace=False, p=reweights))
+                new_samples = list(self.rng.choice(candidates, size=batch_size, replace=False, p=reweights))
+
+            samples = [i for i in new_samples if i not in exclude]
+            if len(samples) < batch_size:
+                new_samples = self.sample(weights, batch_size=batch_size-len(samples))
+                samples.extend(new_samples)
 
             self.samples.extend(samples)
 
