@@ -26,10 +26,12 @@ def check_geometry(cluster, criteria):
     return status
 
 def read_geom_opt(file_path):
-    f = open(file_path, 'rt')
+
     n_cycles = 0
     energies = []
     clusters = []
+
+    f = open(file_path, 'rt')
     status = 0
     for line in f:
         if status == 0:
@@ -56,16 +58,20 @@ def read_geom_opt(file_path):
                 atoms.append(int(line.split()[1]))
                 coords.append([float(x) for x in line.split()[-3:]])
     f.close()
+
     if energies == [] and n_cycles > 1:
         energies.append(energy)
         clusters.append(Atoms(atoms, coords))
+
     return energies, clusters
 
 def read_irc(file_path):
-    f = open(file_path, 'rt')
+
     n_cycles = 0
     energies = []
     clusters = []
+
+    f = open(file_path, 'rt')
     status = 0
     for line in f:
         if status == 0:
@@ -95,10 +101,63 @@ def read_irc(file_path):
                 atoms.append(int(line.split()[1]))
                 coords.append([float(x) for x in line.split()[-3:]])
     f.close()
+
     if energies == [] and n_cycles > 1:
         energies.append(energy)
         clusters.append(Atoms(atoms, coords))
+
     return energies, clusters
+
+def read_vib_modes(file_path):
+
+    n_atoms = 0
+    eigvals = []
+    eigvecs = []
+
+    f = open(file_path, 'rt')
+    status = 0
+    for line in f:
+        if status == 0:
+            if line.strip().startswith('Input orientation:'):
+                status = 1
+        elif status == 1:
+            if line.strip().startswith('-----'):
+                status = 2
+        elif status == 2:
+            if line.strip().startswith('-----'):
+                status = 3
+        elif status == 3:
+            if line.strip().startswith('-----'):
+                status = 10
+            else:
+                n_atoms += 1
+        elif status == 10:
+            if line.strip().startswith('Harmonic frequencies'):
+                status = 11
+        elif status == 11:
+            if line.strip().startswith('-----'):
+                status = 20
+            elif line.strip().startswith('Frequencies'):
+                evals = [float(x) for x in line.split()[2:]]
+                status = 12
+        elif status == 12:
+            if line.strip().startswith('Atom'):
+                evecs = [numpy.zeros((n_atoms, 3)) for x in evals]
+                status = 13
+        elif status == 13:
+            data = line.split()
+            if len(data) < 4:
+                eigvals += evals
+                eigvecs += evecs
+                status = 11
+            else:
+                n = int(data[0])-1
+                for i, _ in enumerate(evals):
+                    for j in range(3):
+                        evecs[i][n,j] = float(data[2+3*i+j])
+    f.close()
+
+    return eigvals, eigvecs
 
 def read_thermochem(file_path, temp=None, pressure=None,
         elec=True, trans=False, rot=False, vib=True,
