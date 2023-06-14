@@ -214,7 +214,7 @@ export OMP_NUM_THREADS={n_proc:d},1
 
         return
 
-    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
+    def sort_conformers(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
 
         if e_window is None:
             e_window = self.e_window
