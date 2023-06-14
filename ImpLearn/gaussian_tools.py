@@ -4,15 +4,13 @@ from ase import Atoms
 
 
 def check_normal_termination(file_path):
-    last_line = ''
     f = open(file_path, 'rt')
-    for line in f:
-        last_line = line
+    lines = f.readlines()
     f.close()
-    if last_line.strip().startswith('Normal termination'):
-        return True
-    elif last_line.strip().startswith('File lengths'):
-        return False
+    if lines[-1].strip().startswith('Normal termination'):
+        return 0
+    elif lines[-1].strip().startswith('File lengths'):
+        return 1
     else:
         return 2
 

@@ -295,15 +295,32 @@ class Gaussian():
                 os.system('g16 {optimizer:s}.com > {optimizer:s}.log'.format(optimizer=optimizer))
 
         if os.path.exists('{:s}.log'.format(optimizer)):
+            energies, clusters = read_geom_opt('{:s}.log'.format(optimizer))
             status = check_normal_termination('{:s}.log'.format(optimizer))
-            if status == True:
-                energies, clusters = read_geom_opt('{:s}.log'.format(optimizer))
+            if os.path.exists('{:s}.ilx'.format(optimizer)):
+                f = open('{:s}.ilx'.format(optimizer), 'rt')
+                code = f.read().strip()
+                f.close()
+                if code == 'keep':
+                    status = -1
+                elif code == 'drop':
+                    status = -2
+            if status == 0:
                 return energies[-1], clusters[-1]
-            elif status == False:
+            elif status == 1:
                 print(optimizer, 'Error termination')
                 return
-            else:
+            elif status == 2:
                 print(optimizer, 'Incomplete')
+                return
+            elif status == -1:
+                print(optimizer, 'Override: keep')
+                return energies[-1], clusters[-1]
+            elif status == -2:
+                print(optimizer, 'Override: drop')
+                return -2
+            else:
+                print(optimizer, 'Unknown error')
                 return
         else:
             print(optimizer, 'No output')
@@ -316,19 +333,37 @@ class Gaussian():
                 os.system('g16 {optimizer:s}.com > {optimizer:s}.log'.format(optimizer=optimizer))
 
         if os.path.exists('{:s}.log'.format(optimizer)):
+            energies, clusters = read_geom_opt('{:s}.log'.format(optimizer))
             status = check_normal_termination('{:s}.log'.format(optimizer))
-            if status == True:
-                energies, clusters = read_geom_opt('{:s}.log'.format(optimizer))
-                if check_geometry(clusters[-1], criteria):
-                    return energies[-1], clusters[-1]
-                else:
-                    print(optimizer, 'Wrong transition state')
-                    return
-            elif status == False:
+            if not check_geometry(clusters[-1], criteria):
+                status = 3
+            if os.path.exists('{:s}.ilx'.format(optimizer)):
+                f = open('{:s}.ilx'.format(optimizer), 'rt')
+                code = f.read().strip()
+                f.close()
+                if code == 'keep':
+                    status = -1
+                elif code == 'drop':
+                    status = -2
+            if status == 0:
+                return energies[-1], clusters[-1]
+            elif status == 1:
                 print(optimizer, 'Error termination')
                 return
-            else:
+            elif status == 2:
                 print(optimizer, 'Incomplete')
+                return
+            elif status == 3:
+                print(optimizer, 'Wrong transition state')
+                return
+            elif status == -1:
+                print(optimizer, 'Override: keep')
+                return energies[-1], clusters[-1]
+            elif status == -2:
+                print(optimizer, 'Override: drop')
+                return -2
+            else:
+                print(optimizer, 'Unknown error')
                 return
         else:
             print(optimizer, 'No output')
@@ -419,7 +454,7 @@ class Gaussian():
 
         return entropies
 
-    def sort(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
+    def sort_conformers(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
 
         if e_window is None:
             e_window = self.e_window
