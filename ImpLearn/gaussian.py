@@ -277,6 +277,7 @@ class Gaussian():
     def run(self, dry_run=False):
         n_struct = len(self.structures)
         for i in range(n_struct):
+            sorted_optimizers = []
             for optimizer in self.optimizers[i]:
                 if self.structure_types[i].upper() == 'TS':
                     output = self.run_transition_state_optimization(optimizer, self.transition_state_criteria[i], dry_run)
@@ -286,6 +287,8 @@ class Gaussian():
                     energy, cluster = output
                     self.energies[i].append(energy)
                     self.clusters[i].append(cluster)
+                    sorted_optimizers.append(optimizer)
+            self.optimizers[i] = sorted_optimizers
         return
 
     def run_geometry_optimization(self, optimizer, dry_run=False):
@@ -314,11 +317,11 @@ class Gaussian():
                 print(optimizer, 'Incomplete')
                 return
             elif status == -1:
-                print(optimizer, 'Override: keep')
+                print(optimizer, 'Override keep')
                 return energies[-1], clusters[-1]
             elif status == -2:
-                print(optimizer, 'Override: drop')
-                return -2
+                print(optimizer, 'Override drop')
+                return
             else:
                 print(optimizer, 'Unknown error')
                 return
@@ -357,11 +360,11 @@ class Gaussian():
                 print(optimizer, 'Wrong transition state')
                 return
             elif status == -1:
-                print(optimizer, 'Override: keep')
+                print(optimizer, 'Override keep')
                 return energies[-1], clusters[-1]
             elif status == -2:
-                print(optimizer, 'Override: drop')
-                return -2
+                print(optimizer, 'Override drop')
+                return
             else:
                 print(optimizer, 'Unknown error')
                 return
