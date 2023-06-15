@@ -463,7 +463,7 @@ class Silanols():
                 q = l + len(chasis_silicons) + len(podal_oxygens)
                 r = l + len(chasis_silicons) + len(podal_oxygens) + len(podal_silicons)
                 s = r + len(secondary_oxygens)
-                t = r + len(secondary_oxygens) + len(secondary_silicons)
+                t = r + len(secondary_oxygens) + len(secondary_hydrogens)
                 t = list(range(s, t))
                 s = list(range(r, s))
                 r = list(range(q, r))
