@@ -21,9 +21,9 @@ def reorder_podal_oxygens(podal_coords, O1_coord, O2_coord, Si1_coord, Si2_coord
             break
         else:
             status = 0
-            for i, _ in enumerate(reordered1[:-1]):
-                if numpy.dot(numpy.cross(zaxis1, centered1[reordered1[i]]), centered1[reordered1[i+1]]) < 0.0:
-                    reordered1[i], reordered1[i+1] = reordered1[i+1], reordered1[i]
+            for j, _ in enumerate(reordered1[:-1]):
+                if numpy.dot(numpy.cross(zaxis1, centered1[reordered1[j]]), centered1[reordered1[j+1]]) < 0.0:
+                    reordered1[j], reordered1[j+1] = reordered1[j+1], reordered1[j]
                     status = -1
                     break
 
@@ -35,9 +35,9 @@ def reorder_podal_oxygens(podal_coords, O1_coord, O2_coord, Si1_coord, Si2_coord
             break
         else:
             status = 0
-            for i, _ in enumerate(reordered2[:-1]):
-                if numpy.dot(numpy.cross(zaxis2, centered2[reordered2[i]]), centered2[reordered2[i+1]]) < 0.0:
-                    reordered2[i], reordered2[i+1] = reordered2[i+1], reordered2[i]
+            for j, _ in enumerate(reordered2[:-1]):
+                if numpy.dot(numpy.cross(zaxis2, centered2[reordered2[j]]), centered2[reordered2[j+1]]) < 0.0:
+                    reordered2[j], reordered2[j+1] = reordered2[j+1], reordered2[j]
                     status = -1
                     break
 
