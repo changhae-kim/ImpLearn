@@ -92,6 +92,7 @@ class Graft():
 
     def run(self):
 
+        input_atoms = self.input_cluster.get_chemical_symbols()
         input_coords = self.input_cluster.get_positions()
 
         ref_atoms = self.ref_cluster.get_chemical_symbols()
@@ -100,9 +101,13 @@ class Graft():
         match = MatchCoords(ref_coords[self.ref_match_atoms], input_coords[self.input_match_atoms], params=self.params)
         match.fit()
 
-        output_atoms = ref_atoms
-        output_coords = match.transform(ref_coords)
-        output_coords[self.ref_podal_atoms] = input_coords[self.input_podal_atoms]
+        if len(self.input_podal_atoms) == len(self.ref_podal_atoms):
+            output_atoms = ref_atoms
+            output_coords = match.transform(ref_coords)
+            output_coords[self.ref_podal_atoms] = input_coords[self.input_podal_atoms]
+        else:
+            output_atoms = [X for i, X in enumerate(input_atoms) if i in self.input_podal_atoms] + [X for i, X in enumerate(ref_atoms) if i not in self.ref_podal_atoms]
+            output_coords = [coords for i, coords in enumerate(input_coords) if i in self.input_podal_atoms] + [coords for i, coords in enumerate(match.transform(ref_coords)) if i not in self.ref_podal_atoms]
 
         self.output_cluster = Atoms(output_atoms, output_coords)
 
