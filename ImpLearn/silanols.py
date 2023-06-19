@@ -6,7 +6,7 @@ from ase.neighborlist import neighbor_list
 from matplotlib import pyplot
 from scipy.spatial.transform import Rotation
 
-from .silanols_tools import reorder_podal_oxygens
+from .silanols_tools import reorder_podal_oxygens, reorder_podal_oxygens_v2
 
 
 class Silanols():
@@ -240,13 +240,16 @@ class Silanols():
 
             if reorder_podals:
                 n = len(peripheral_hydrogens)
-                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens)
-                p = m + len(chasis_silicons)
-                q = m + len(chasis_silicons) + len(podal_oxygens)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens)
+                l = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens)
+                p = l + len(chasis_silicons)
+                q = l + len(chasis_silicons) + len(podal_oxygens)
                 if len(bridging_oxygens) > 0:
-                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], cluster_coords[m-1])
+                    # reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[l+0], cluster_coords[l+1], cluster_coords[l-1])
+                    reordered = reorder_podal_oxygens_v2(cluster_coords[p:q], cluster_coords[n:m], cluster_coords[l:p], cluster_coords[m:l])
                 else:
-                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
+                    # reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[l+0], cluster_coords[l+1])
+                    reordered = reorder_podal_oxygens_v2(cluster_coords[p:q], cluster_coords[n:m], cluster_coords[l:p])
                 old_coords = cluster_coords
                 old_podals = podal_oxygens
                 cluster_coords = []
@@ -385,13 +388,16 @@ class Silanols():
 
             if reorder_podals:
                 n = len(peripheral_hydrogens)
-                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens)
-                p = m + len(chasis_silicons)
-                q = m + len(chasis_silicons) + len(podal_oxygens)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens)
+                l = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens)
+                p = l + len(chasis_silicons)
+                q = l + len(chasis_silicons) + len(podal_oxygens)
                 if len(bridging_oxygens) > 0:
-                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1], cluster_coords[m-1])
+                    # reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[l+0], cluster_coords[l+1], cluster_coords[l-1])
+                    reordered = reorder_podal_oxygens_v2(cluster_coords[p:q], cluster_coords[n:m], cluster_coords[l:p], cluster_coords[m:l])
                 else:
-                    reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[m+0], cluster_coords[m+1])
+                    # reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[l+0], cluster_coords[l+1])
+                    reordered = reorder_podal_oxygens_v2(cluster_coords[p:q], cluster_coords[n:m], cluster_coords[l:p])
                 old_coords = cluster_coords
                 old_podals = podal_oxygens
                 cluster_coords = []
@@ -405,43 +411,67 @@ class Silanols():
                     cluster_coords.append(coord)
 
             m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons)
-            podal_silicons = []
+            secondary_chasis_silicons = []
             for n, i in enumerate(podal_oxygens):
                 i_neighbors = bonds[1][bonds[0] == i]
                 for j in i_neighbors:
-                    if atoms[j] == 'Si' and j not in chasis_silicons + podal_silicons:
-                        podal_silicons.append(j)
+                    if atoms[j] == 'Si' and j not in chasis_silicons + secondary_chasis_silicons:
+                        secondary_chasis_silicons.append(j)
                         cluster_atoms.append('Si')
                         cluster_coords.append(cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
 
             secondary_bridging_oxygens = []
-            secondary_oxygens = []
-            for n, i in enumerate(podal_silicons):
+            secondary_podal_oxygens = []
+            for n, i in enumerate(secondary_chasis_silicons):
                 i_neighbors = bonds[1][bonds[0] == i]
                 for j in i_neighbors:
-                    if atoms[j] == 'O' and j not in peripheral_oxygens + bridging_oxygens + podal_oxygens + secondary_bridging_oxygens + secondary_oxygens:
+                    if atoms[j] == 'O' and j not in peripheral_oxygens + bridging_oxygens + podal_oxygens + secondary_bridging_oxygens + secondary_podal_oxygens:
                         j_neighbors = bonds[1][bonds[0] == j]
                         m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons) + len(podal_oxygens) + len(secondary_bridging_oxygens)
-                        if len(numpy.intersect1d(podal_silicons, j_neighbors)) > 1:
+                        if len(numpy.intersect1d(secondary_chasis_silicons, j_neighbors)) > 1:
                             secondary_bridging_oxygens.append(j)
                             cluster_atoms.insert(m, 'O')
                             cluster_coords.insert(m, cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
                         else:
-                            secondary_oxygens.append(j)
+                            secondary_podal_oxygens.append(j)
                             cluster_atoms.append('O')
                             cluster_coords.append(cluster_coords[m + n] + slab.get_distance(i, j, mic=True, vector=True))
 
-            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons) + len(podal_oxygens) + len(secondary_bridging_oxygens) + len(podal_silicons)
-            secondary_hydrogens = []
+            if reorder_podals:
+                n = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons)
+                m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons) + len(podal_oxygens)
+                l = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons) + len(podal_oxygens) + len(secondary_bridging_oxygens)
+                p = l + len(secondary_chasis_silicons)
+                q = l + len(secondary_chasis_silicons) + len(secondary_podal_oxygens)
+                if len(secondary_bridging_oxygens) > 0:
+                    # reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[l+0], cluster_coords[l+1], cluster_coords[l-1])
+                    reordered = reorder_podal_oxygens_v2(cluster_coords[p:q], cluster_coords[n:m], cluster_coords[l:p], cluster_coords[m:l])
+                else:
+                    # reordered = reorder_podal_oxygens(cluster_coords[p:q], cluster_coords[n+0], cluster_coords[n+1], cluster_coords[l+0], cluster_coords[l+1])
+                    reordered = reorder_podal_oxygens_v2(cluster_coords[p:q], cluster_coords[n:m], cluster_coords[l:p])
+                old_coords = cluster_coords
+                old_podals = secondary_podal_oxygens
+                cluster_coords = []
+                secondary_podal_oxygens = []
+                for coord in old_coords[:p]:
+                    cluster_coords.append(coord)
+                for i in reordered:
+                    secondary_podal_oxygens.append(old_podals[i])
+                    cluster_coords.append(old_coords[p:q][i])
+                for coord in old_coords[q:]:
+                    cluster_coords.append(coord)
+
+            m = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens) + len(chasis_silicons) + len(podal_oxygens) + len(secondary_bridging_oxygens) + len(secondary_chasis_silicons)
+            secondary_podal_hydrogens = []
             if F_capping:
-                for n, i in enumerate(secondary_oxygens):
+                for n, i in enumerate(secondary_podal_oxygens):
                     cluster_atoms[m + n] = 'F'
             else:
-                for n, i in enumerate(secondary_oxygens):
+                for n, i in enumerate(secondary_podal_oxygens):
                     i_neighbors = bonds[1][bonds[0] == i]
                     for j in i_neighbors:
-                        if atoms[j] == 'Si' and j not in chasis_silicons + podal_silicons:
-                            secondary_hydrogens.append(j)
+                        if atoms[j] == 'Si' and j not in chasis_silicons + secondary_chasis_silicons:
+                            secondary_podal_hydrogens.append(j)
                             cluster_atoms.append('H')
                             axis = slab.get_distance(i, j, mic=True, vector=True)
                             axis = axis / numpy.linalg.norm(axis)
@@ -468,20 +498,20 @@ class Silanols():
                 l = len(peripheral_hydrogens) + len(peripheral_oxygens) + len(bridging_oxygens)
                 p = l + len(chasis_silicons)
                 q = l + len(chasis_silicons) + len(podal_oxygens)
-                r = l + len(chasis_silicons) + len(podal_oxygens) + len(podal_silicons)
-                s = l + len(chasis_silicons) + len(podal_oxygens) + len(podal_silicons) + len(secondary_bridging_oxygens)
-                u = s + len(secondary_oxygens)
-                v = s + len(secondary_oxygens) + len(secondary_hydrogens)
+                r = l + len(chasis_silicons) + len(podal_oxygens) + len(secondary_bridging_oxygens)
+                u = r + len(secondary_chasis_silicons)
+                v = r + len(secondary_chasis_silicons) + len(secondary_podal_oxygens)
+                w = r + len(secondary_chasis_silicons) + len(secondary_podal_oxygens) + len(secondary_podal_hydrogens)
+                w = list(range(v, w))
                 v = list(range(u, v))
-                u = list(range(s, u))
-                s = list(range(r, s))
+                u = list(range(r, u))
                 r = list(range(q, r))
                 q = list(range(p, q))
                 p = list(range(l, p))
                 l = list(range(m, l))
                 m = list(range(n, m))
                 n = list(range(0, n))
-                indices = v + u + s + r + q + p + l + m + n
+                indices = w + v + u + r + q + p + l + m + n
                 cluster_atoms = [cluster_atoms[n] for n in indices]
                 cluster_coords = [cluster_coords[n] for n in indices]
 
