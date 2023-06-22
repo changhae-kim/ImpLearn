@@ -338,7 +338,7 @@ class Gaussian():
         if os.path.exists('{:s}.log'.format(optimizer)):
             energies, clusters = read_geom_opt('{:s}.log'.format(optimizer))
             status = check_normal_termination('{:s}.log'.format(optimizer))
-            if not check_geometry(clusters[-1], criteria):
+            if status == 0 and not check_geometry(clusters[-1], criteria):
                 status = 3
             if os.path.exists('{:s}.ilx'.format(optimizer)):
                 f = open('{:s}.ilx'.format(optimizer), 'rt')
