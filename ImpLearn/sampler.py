@@ -41,24 +41,21 @@ class Sampler():
             # but they are necessary to allow the exclusion of sites on the fly during an importance learning run.
             # Take caution when editing.
 
-            if replace:
-                candidates = [i for i in range(self.n_points)]
-                new_samples = list(self.rng.choice(candidates, size=batch_size, replace=True, p=weights))
-            else:
-                candidates = [i for i in range(self.n_points) if i not in self.samples]
-                if weights is None:
-                    reweights = None
+            samples = []
+            while len(samples) < batch_size:
+                if replace:
+                    candidates = [i for i in range(self.n_points)]
+                    new_samples = list(self.rng.choice(candidates, size=batch_size, replace=True, p=weights))
                 else:
-                    reweights = numpy.array(weights)[candidates]
-                    reweights = reweights / numpy.sum(reweights)
-                new_samples = list(self.rng.choice(candidates, size=batch_size, replace=False, p=reweights))
-
-            samples = [i for i in new_samples if i not in exclude]
-            if len(samples) < batch_size:
-                new_samples = self.sample(weights, batch_size=batch_size-len(samples))
-                samples.extend(new_samples)
-
-            self.samples.extend([i for i in samples if i not in self.samples])
+                    candidates = [i for i in range(self.n_points) if i not in self.samples + samples]
+                    if weights is None:
+                        reweights = None
+                    else:
+                        reweights = numpy.array(weights)[candidates]
+                        reweights = reweights / numpy.sum(reweights)
+                    new_samples = list(self.rng.choice(candidates, size=batch_size-len(samples), replace=False, p=reweights))
+                samples += [i for i in new_samples if i not in exclude]
+            self.samples += samples
 
             ###
 
