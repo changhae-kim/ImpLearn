@@ -22,8 +22,7 @@ class Gaussian():
             e_window=0.00956161, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
-            degeneracies=1,
-            verbose=False
+            degeneracies=1
             ):
 
         if isinstance(which, int):
@@ -111,8 +110,6 @@ class Gaussian():
             self.degeneracies = [[g for g in degeneracies] for i in range(n_struct)]
         else:
             self.degeneracies = degeneracies
-
-        self.verbose = verbose
 
         self.optimizers = [[] for i in range(n_struct)]
         self.energies = [[] for i in range(n_struct)]
@@ -277,15 +274,15 @@ class Gaussian():
 
         return
 
-    def run(self, dry_run=False):
+    def run(self, dry_run=False, verbose=False):
         n_struct = len(self.structures)
         for i in range(n_struct):
             sorted_optimizers = []
             for optimizer in self.optimizers[i]:
                 if self.structure_types[i].upper() == 'TS':
-                    output = self.run_transition_state_optimization(optimizer, self.transition_state_criteria[i], dry_run)
+                    output = self.run_transition_state_optimization(optimizer, self.transition_state_criteria[i], dry_run, verbose)
                 else:
-                    output = self.run_geometry_optimization(optimizer, dry_run)
+                    output = self.run_geometry_optimization(optimizer, dry_run, verbose)
                 if output is not None:
                     energy, cluster = output
                     self.energies[i].append(energy)
@@ -294,7 +291,7 @@ class Gaussian():
             self.optimizers[i] = sorted_optimizers
         return
 
-    def run_geometry_optimization(self, optimizer, dry_run=False):
+    def run_geometry_optimization(self, optimizer, dry_run=False, verbose=False):
 
         if not os.path.exists('{:s}.log'.format(optimizer)) or not check_normal_termination('{:s}.log'.format(optimizer)):
             if not dry_run:
@@ -334,7 +331,7 @@ class Gaussian():
             print(optimizer, 'No output')
             return
 
-    def run_transition_state_optimization(self, optimizer, criteria, dry_run=False):
+    def run_transition_state_optimization(self, optimizer, criteria, dry_run=False, verbose=False):
 
         if not os.path.exists('{:s}.log'.format(optimizer)) or not check_normal_termination('{:s}.log'.format(optimizer)):
             if not dry_run:
