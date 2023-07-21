@@ -22,7 +22,8 @@ class Gaussian():
             e_window=0.00956161, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
-            degeneracies=1
+            degeneracies=1,
+            verbose=False
             ):
 
         if isinstance(which, int):
@@ -110,6 +111,8 @@ class Gaussian():
             self.degeneracies = [[g for g in degeneracies] for i in range(n_struct)]
         else:
             self.degeneracies = degeneracies
+
+        self.verbose = verbose
 
         self.optimizers = [[] for i in range(n_struct)]
         self.energies = [[] for i in range(n_struct)]
@@ -317,10 +320,12 @@ class Gaussian():
                 print(optimizer, 'Incomplete')
                 return
             elif status == -1:
-                print(optimizer, 'Override keep')
+                if verbose:
+                    print(optimizer, 'Override keep')
                 return energies[-1], clusters[-1]
             elif status == -2:
-                print(optimizer, 'Override drop')
+                if verbose:
+                    print(optimizer, 'Override drop')
                 return
             else:
                 print(optimizer, 'Unknown error')
@@ -360,10 +365,12 @@ class Gaussian():
                 print(optimizer, 'Wrong transition state')
                 return
             elif status == -1:
-                print(optimizer, 'Override keep')
+                if verbose:
+                    print(optimizer, 'Override keep')
                 return energies[-1], clusters[-1]
             elif status == -2:
-                print(optimizer, 'Override drop')
+                if verbose:
+                    print(optimizer, 'Override drop')
                 return
             else:
                 print(optimizer, 'Unknown error')
