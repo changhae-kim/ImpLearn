@@ -134,17 +134,14 @@ class Kernel():
         return y
 
     def predict_loo(self):
-        X = self.X_train
-        y = self.y_train
-        dX = X[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
+        dX = self.X_train[:, numpy.newaxis, :] - self.X_train[numpy.newaxis, :, :]
         dX2 = numpy.einsum('ijk,ijl,kl->ij', dX, dX, self.matrix)
         numpy.fill_diagonal(dX2, numpy.inf)
         softmax = numpy.exp( -dX2 - logsumexp(-dX2, axis=1)[:, numpy.newaxis] )
-        y_pred = numpy.einsum('ij,j->i', softmax, self.y_train)
+        y = numpy.einsum('ij,j->i', softmax, self.y_train)
         if self.y_norm is not None:
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
-            y_pred = self.y_scaler.inverse_transform(y_pred[:, numpy.newaxis]).ravel()
-        return y_pred
+        return y
 
     def errors(self):
         y = self.y_train
