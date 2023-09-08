@@ -106,6 +106,57 @@ def read_irc(file_path):
 
     return energies, clusters
 
+def read_orbitals(file_path):
+
+    sf = 6
+    eigvals = []
+
+    f = open(file_path, 'rt')
+    status = 0
+    for line in f:
+        if status == 0:
+            if line.strip().startswith('Population analysis'):
+                alpha_occ = []
+                alpha_vir = []
+                beta_occ = []
+                beta_vir = []
+                status = 1
+        if status == 1:
+            if line.strip().startswith('Condensed to atoms'):
+                eigvals.append([alpha_occ, alpha_vir, beta_occ, beta_vir])
+                status = 0
+            elif line.strip().startswith('Alpha  occ.'):
+                data = line[28:]
+                ii = 0
+                for i, x in enumerate(data):
+                    if x == '.':
+                        alpha_occ.append(float(data[ii:i+sf]))
+                        ii = i+sf
+            elif line.strip().startswith('Alpha virt.'):
+                data = line[28:]
+                ii = 0
+                for i, x in enumerate(data):
+                    if x == '.':
+                        alpha_vir.append(float(data[ii:i+sf]))
+                        ii = i+sf
+            elif line.strip().startswith('Beta  occ.'):
+                data = line[28:]
+                ii = 0
+                for i, x in enumerate(data):
+                    if x == '.':
+                        beta_occ.append(float(data[ii:i+sf]))
+                        ii = i+sf
+            elif line.strip().startswith('Beta virt.'):
+                data = line[28:]
+                ii = 0
+                for i, x in enumerate(data):
+                    if x == '.':
+                        beta_vir.append(float(data[ii:i+sf]))
+                        ii = i+sf
+    f.close()
+
+    return eigvals
+
 def read_vib_modes(file_path):
 
     n_atoms = 0

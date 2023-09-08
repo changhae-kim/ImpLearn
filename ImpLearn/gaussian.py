@@ -117,6 +117,7 @@ class Gaussian():
         self.enthalpies = [[] for i in range(n_struct)]
         self.entropies = [[] for i in range(n_struct)]
         self.gibbs_energies = [[] for i in range(n_struct)]
+        self.orbitals = [[] for i in range(n_struct)]
 
         return
 
@@ -378,6 +379,18 @@ class Gaussian():
 
         return
 
+    def get_orbitals(self):
+
+        n_struct = len(self.structures)
+
+        self.orbitals = [[] for i in range(n_struct)]
+        for i in range(n_struct):
+            for optimizer in self.optimizers[i]:
+                orbitals = read_orbitals('{:s}.log'.format(optimizer))
+                self.orbitals[i].append(orbitals[-1])
+
+        return self.orbitals
+
     def get_thermodynamics(self, temps=None, pressure=None, vib_cutoff=None):
 
         n_struct = len(self.structures)
@@ -406,8 +419,9 @@ class Gaussian():
 
         return
 
-
     def get_gibbs_energies(self, temps=None, pressure=None, vib_cutoff=None):
+
+        n_struct = len(self.structures)
 
         if temps is None:
             temps = self.temps
@@ -416,17 +430,15 @@ class Gaussian():
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        n_struct = len(self.structures)
-        if self.gibbs_energies == [[] for i in range(n_struct)]:
-            self.get_thermodynamics(temps, pressure, vib_cutoff)
-
-        if temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
+        if self.gibbs_energies == [[] for i in range(n_struct)] or temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
             self.get_thermodynamics(temps, pressure, vib_cutoff)
 
         return self.gibbs_energies
 
     def get_enthalpies(self, temps=None, pressure=None, vib_cutoff=None):
 
+        n_struct = len(self.structures)
+
         if temps is None:
             temps = self.temps
         if pressure is None:
@@ -434,17 +446,15 @@ class Gaussian():
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        n_struct = len(self.structures)
-        if self.enthalpies == [[] for i in range(n_struct)]:
-            self.get_thermodynamics(temps, pressure, vib_cutoff)
-
-        if temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
+        if self.enthalpies == [[] for i in range(n_struct)] or temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
             self.get_thermodynamics(temps, pressure, vib_cutoff)
 
         return self.enthalpies
 
     def get_entropies(self, temps=None, pressure=None, vib_cutoff=None):
 
+        n_struct = len(self.structures)
+
         if temps is None:
             temps = self.temps
         if pressure is None:
@@ -452,14 +462,10 @@ class Gaussian():
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        n_struct = len(self.structures)
-        if self.entropies == [[] for i in range(n_struct)]:
+        if self.entropies == [[] for i in range(n_struct)] or temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
             self.get_thermodynamics(temps, pressure, vib_cutoff)
 
-        if temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressure, vib_cutoff)
-
-        return entropies
+        return self.entropies
 
     def sort_conformers(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
 
@@ -513,6 +519,9 @@ class Gaussian():
 
         if self.gibbs_energies != [[] for i in range(n_struct)]:
             self.get_thermodynamics()
+
+        if self.orbitals != [[] for i in range(n_struct)]:
+            self.get_orbitals()
 
         return
 
