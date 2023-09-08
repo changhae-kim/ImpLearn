@@ -4,7 +4,7 @@ import os
 from ase import Atoms
 from ase.io import read
 
-from .gaussian_tools import check_normal_termination, check_geometry, read_geom_opt, read_thermochem
+from .gaussian_tools import check_normal_termination, check_geometry, read_geom_opt, read_orbitals, read_thermochem
 
 
 class Gaussian():
