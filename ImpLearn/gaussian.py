@@ -13,7 +13,7 @@ class Gaussian():
             which=':', file_type='xyz',
             structure_types='EQ',
             charges=0, mults=4,
-            temps=373.15, pressure=1.0, vib_cutoff=100.0,
+            temps=373.15, pressures=1.0, vib_cutoff=100.0,
             n_proc=24, method='wB97XD/Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****\nF 0\n3-21G\n****',
             opt_thresh='Normal',
@@ -64,7 +64,11 @@ class Gaussian():
         else:
             self.temps = temps
 
-        self.pressure = pressure
+        if isinstance(pressures, float):
+            self.pressures = [pressures] * n_struct
+        else:
+            self.pressures = pressures
+
         self.vib_cutoff = vib_cutoff
 
         self.n_proc = n_proc
@@ -153,10 +157,10 @@ class Gaussian():
         else:
             opt = 'Opt=(MaxCycles=200) '
 
-        if self.temps[state] == 0.0 or self.pressure == 0.0:
+        if self.temps[state] == 0.0 or self.pressures[state] == 0.0:
             freq = ''
         else:
-            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressure)
+            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressures[state])
 
         header = '''%NProcShared={n_proc:d}
 #n {method:s} NoSymm SCF=XQC {opt:s}{freq:s}
@@ -199,10 +203,10 @@ class Gaussian():
         else:
             opt = 'Opt=(GIC,ModRedundant,MaxCycles=200) '
 
-        if self.temps[state] == 0.0 or self.pressure == 0.0:
+        if self.temps[state] == 0.0 or self.pressures[state] == 0.0:
             freq = ''
         else:
-            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressure)
+            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressures[state])
 
         header = '''%NProcShared={n_proc:d}
 #n {method:s} NoSymm SCF=XQC {opt:s}{freq:s}
@@ -245,10 +249,10 @@ class Gaussian():
         else:
             opt = 'Opt=(TS,CalcFC,NoEigen,MaxCycles=200) '
 
-        if self.temps[state] == 0.0 or self.pressure == 0.0:
+        if self.temps[state] == 0.0 or self.pressures[state] == 0.0:
             freq = ''
         else:
-            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressure)
+            freq = 'Freq Temp={temp:.3f} Pressure={pressure:.5f}'.format(temp=self.temps[state], pressure=self.pressures[state])
 
         header = '''%NProcShared={n_proc:d}
 #n {method:s} NoSymm SCF=XQC {opt:s}{freq:s}
@@ -391,7 +395,7 @@ class Gaussian():
 
         return self.orbitals
 
-    def get_thermodynamics(self, temps=None, pressure=None, vib_cutoff=None):
+    def get_thermodynamics(self, temps=None, pressures=None, vib_cutoff=None):
 
         n_struct = len(self.structures)
 
@@ -402,8 +406,13 @@ class Gaussian():
         else:
             temps = temps
 
-        if pressure is None:
-            pressure = self.pressure
+        if pressures is None:
+            pressures = self.pressures
+        elif isinstance(pressures, float):
+            pressures = [pressures] * n_struct
+        else:
+            pressures = pressures
+
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
@@ -412,58 +421,58 @@ class Gaussian():
         self.gibbs_energies = [[] for i in range(n_struct)]
         for i in range(n_struct):
             for optimizer in self.optimizers[i]:
-                E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressure, vib_cutoff=vib_cutoff, verbose=True)
+                E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressures[i], vib_cutoff=vib_cutoff, verbose=True)
                 self.enthalpies[i].append(H)
                 self.entropies[i].append(S)
                 self.gibbs_energies[i].append(G)
 
         return
 
-    def get_gibbs_energies(self, temps=None, pressure=None, vib_cutoff=None):
+    def get_gibbs_energies(self, temps=None, pressures=None, vib_cutoff=None):
 
         n_struct = len(self.structures)
 
         if temps is None:
             temps = self.temps
-        if pressure is None:
-            pressure = self.pressure
+        if pressures is None:
+            pressures = self.pressures
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        if self.gibbs_energies == [[] for i in range(n_struct)] or temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressure, vib_cutoff)
+        if self.gibbs_energies == [[] for i in range(n_struct)] or temps != self.temps or pressures != self.pressures or vib_cutoff != self.vib_cutoff:
+            self.get_thermodynamics(temps, pressures, vib_cutoff)
 
         return self.gibbs_energies
 
-    def get_enthalpies(self, temps=None, pressure=None, vib_cutoff=None):
+    def get_enthalpies(self, temps=None, pressures=None, vib_cutoff=None):
 
         n_struct = len(self.structures)
 
         if temps is None:
             temps = self.temps
-        if pressure is None:
-            pressure = self.pressure
+        if pressures is None:
+            pressures = self.pressures
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        if self.enthalpies == [[] for i in range(n_struct)] or temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressure, vib_cutoff)
+        if self.enthalpies == [[] for i in range(n_struct)] or temps != self.temps or pressures != self.pressures or vib_cutoff != self.vib_cutoff:
+            self.get_thermodynamics(temps, pressures, vib_cutoff)
 
         return self.enthalpies
 
-    def get_entropies(self, temps=None, pressure=None, vib_cutoff=None):
+    def get_entropies(self, temps=None, pressures=None, vib_cutoff=None):
 
         n_struct = len(self.structures)
 
         if temps is None:
             temps = self.temps
-        if pressure is None:
-            pressure = self.pressure
+        if pressures is None:
+            pressures = self.pressures
         if vib_cutoff is None:
             vib_cutoff = self.vib_cutoff
 
-        if self.entropies == [[] for i in range(n_struct)] or temps != self.temps or pressure != self.pressure or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressure, vib_cutoff)
+        if self.entropies == [[] for i in range(n_struct)] or temps != self.temps or pressures != self.pressures or vib_cutoff != self.vib_cutoff:
+            self.get_thermodynamics(temps, pressures, vib_cutoff)
 
         return self.entropies
 
