@@ -208,9 +208,9 @@ def read_vib_modes(file_path):
 
     return eigvals, eigvecs
 
-def read_thermochem(file_path, temp=None, pressure=None,
+def read_thermochem(file_path, temp=None, pressure=None, vib_cutoff=0.0,
         elec=True, trans=False, rot=False, vib=True,
-        vib_cutoff=0.0, verbose=False):
+        verbose=False):
 
     kB = 1.380649e-23 / 4.3597447222071e-18
     K = 6.62607015e-34 * 2.99792458e+8 / 1.380649e-23 * 100.0
