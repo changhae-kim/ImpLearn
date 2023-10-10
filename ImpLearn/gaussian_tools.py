@@ -348,22 +348,3 @@ def read_thermochem_salman(file_path, new_constants=False):
 
     return G
 
-
-if __name__ == '__main__':
-
-
-    print('salman script', -594.3547231345688)
-    print('salman algorithm with old constants', read_thermochem_salman('tests/1_b.log', new_constants=False))
-    print('salman algorithm with new constants', read_thermochem_salman('tests/1_b.log', new_constants=True))
-    print('new algorithm', read_thermochem('tests/1_b.log'))
-
-    elec, trans, rot, vib = True, True, True, True
-    print('act 300 K 1 atm', read_thermochem('tests/1_b.log', elec=elec, trans=trans, rot=rot, vib=vib))
-    print('est 600 K 1 atm', read_thermochem('tests/1_b.log', temp=600.0, elec=elec, trans=trans, rot=rot, vib=vib))
-    print('act 600 K 1 atm', read_thermochem('tests/1_b_T.log', elec=elec, trans=trans, rot=rot, vib=vib))
-    print('est 300 K 2 atm', read_thermochem('tests/1_b.log', pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
-    print('act 300 K 2 atm', read_thermochem('tests/1_b_P.log', elec=elec, trans=trans, rot=rot, vib=vib))
-    print('est 600 K 2 atm', read_thermochem('tests/1_b.log', temp=600.0, pressure=2.0, elec=elec, trans=trans, rot=rot, vib=vib))
-    print('act 600 K 2 atm', read_thermochem('tests/1_b_TP.log', elec=elec, trans=trans, rot=rot, vib=vib))
-
-

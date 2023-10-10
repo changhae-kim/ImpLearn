@@ -156,36 +156,3 @@ class Kernel():
         err = numpy.sqrt(numpy.mean(self.weights*y_err*y_err))
         return err
 
-
-if __name__ == '__main__':
-
-    rng = numpy.random.RandomState(0)
-
-    n_samples, n_features = 10, 5
-    X = rng.randn(n_samples, n_features)
-    y = rng.randn(n_samples)
-    print(X)
-    print(y)
-    kernel = Kernel(norm=None)
-    kernel.fit(X, y)
-    print(kernel.matrix)
-    z = kernel.predict(X)
-    print(z)
-    
-    '''
-    n_samples, n_features = 200, 2
-    X = 5.0 * rng.randn(n_samples, n_features)
-    y = numpy.cos((X[:, 0]**2.0 + X[:, 1]**2.0)**0.5)
-    print(X)
-    print(y)
-    kernel = Kernel(norm=None)
-    kernel.fit(X, y)
-    print(kernel.matrix)
-    n_tests = 20
-    Z = 5.0 * rng.randn(n_tests, n_features)
-    z = numpy.cos((Z[:, 0]**2.0 + Z[:, 1]**2.0)**0.5)
-    print(z)
-    z = kernel.predict(Z)
-    print(z)
-    '''
-

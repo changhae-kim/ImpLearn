@@ -111,24 +111,3 @@ def get_zmatrix(atoms, coords):
                     coords.append(molecule.get_dihedral(i, i-1, i-2, i-3))
     return atoms, indices, coords
 
-
-if __name__ == '__main__':
-
-    from ase.io import read
-    for file_path in ['tests/c0h2.xyz', 'tests/c1h4.xyz', 'tests/c2h6.xyz', 'tests/c3h8.xyz', 'tests/c6h12.xyz']:
-        molecule = read(file_path, 0, 'xyz')
-        atoms = molecule.get_chemical_symbols()
-        coords = molecule.get_positions()
-        atoms, indices, coords = get_zmatrix(atoms, coords)
-        print(atoms)
-        print([i+1 for i in indices])
-        print(coords)
-    for file_path in ['tests/A_0000.xyz']:
-        molecule = read(file_path, 0, 'xyz')
-        atoms = molecule.get_chemical_symbols()
-        coords = molecule.get_positions()
-        atoms, indices, coords = get_zmatrix(atoms[6:18], coords[6:18])
-        print(atoms)
-        print([i+1 for i in indices])
-        print(coords)
-

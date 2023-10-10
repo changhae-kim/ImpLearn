@@ -581,33 +581,3 @@ class Silanols():
             write(file_path.format(a, b), cluster, file_type)
         return
 
-
-if __name__ == '__main__':
-
-    clusters = Silanols('tests/A_117SiO2_35H2O', 'vasp')
-    print('--- MAIN ---')
-    print('Atoms')
-    atoms = clusters.slab.get_chemical_symbols()
-    print(len(atoms))
-    print(atoms)
-    print('Bonds')
-    bonds = [[i, j] for i, j in zip(*neighbor_list('ij', clusters.slab, clusters.bond_cutoffs)) if i < j]
-    print(len(bonds))
-    print(bonds)
-    print('OH Groups')
-    print(len(clusters.OH_groups))
-    print(clusters.OH_groups)
-    print('Geminal OH Pairs')
-    print(len(clusters.geminal_OH_pairs))
-    print(clusters.geminal_OH_pairs)
-    print('Vicinal OH Pairs')
-    print(len(clusters.vicinal_OH_pairs))
-    print(clusters.vicinal_OH_pairs)
-    print('Viable OH Pairs')
-    print(len(clusters.viable_OH_pairs))
-    print(clusters.viable_OH_pairs)
-    clusters.analyze_bonds()
-    clusters.analyze_distances('A_d{:s}{:s}.png')
-    clusters.save_clusters('A_{:02d}{:02d}.xyz', 'xyz')
-
-

@@ -66,19 +66,3 @@ class Sampler():
 
         return samples
 
-
-if __name__ == '__main__':
-
-    n_points = 500
-
-    sampler = Sampler(n_points)
-
-    print(sampler.samples)
-
-    weights = numpy.exp(-5.0 * numpy.arange(n_points))
-    weights /= numpy.sum(weights)
-    samples = sampler.sample(weights)
-
-    print(samples)
-    print(sampler.samples)
-

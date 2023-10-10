@@ -4,6 +4,8 @@ import os
 from ase import Atoms
 from ase.io import read, write
 
+#from .graft import MatchCoords
+
 
 def check_normal_termination(file_path):
     status = False
@@ -250,6 +252,9 @@ export OMP_NUM_THREADS={n_proc:d},1
                     atoms = self.clusters[i][m].get_chemical_symbols()
                     coords = self.clusters[i][m].get_positions()
                     sorted_coords = sorted_cluster.get_positions()
+                    #match = MatchCoords(coords, sorted_coords)
+                    #match.fit()
+                    #coords = match.transform(coords)
                     indices = [j for j, X in enumerate(atoms) if j not in exclude_atoms[i] and X not in exclude_elements[i]]
                     if numpy.sqrt(numpy.mean((coords[indices]-sorted_coords[indices])**2)) < r_thresh:
                         status = False
