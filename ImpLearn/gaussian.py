@@ -12,14 +12,14 @@ class Gaussian():
 
     def __init__(self, file_paths, prefixes,
             which=':', file_type='xyz',
-            structure_types='EQ',
+            struc_types='EQ',
             charges=0, mults=4,
             temps=373.15, pressures=1.0, vib_cutoff=100.0,
             n_proc=24, method='wB97XD/Gen',
             gen_basis='Cr 0\nDef2TZVP\n****\nSi O C H 0\nTZVP\n****\nF 0\n3-21G\n****',
             opt_thresh='Normal',
             frozen_atoms=[0, 1, 2, 3],
-            transition_state_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)},
+            ts_criteria={(10, 11): (1.9, 2.4), (10, 13): (1.9, 2.4), (12, 13): (1.9, 2.4)},
             e_window=0.00956161, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
@@ -45,10 +45,10 @@ class Gaussian():
 
         n_struct = len(self.structures)
 
-        if isinstance(structure_types, str):
-            self.structure_types = [structure_types] * n_struct
+        if isinstance(struc_types, str):
+            self.struc_types = [struc_types] * n_struct
         else:
-            self.structure_types = structure_types
+            self.struc_types = struc_types
 
         if isinstance(charges, int):
             self.charges = [charges] * n_struct
@@ -87,10 +87,10 @@ class Gaussian():
         else:
             self.frozen_atoms = frozen_atoms
 
-        if isinstance(transition_state_criteria, dict):
-            self.transition_state_criteria = [transition_state_criteria] * n_struct
+        if isinstance(ts_criteria, dict):
+            self.ts_criteria = [ts_criteria] * n_struct
         else:
-            self.transition_state_criteria = transition_state_criteria
+            self.ts_criteria = ts_criteria
 
         self.e_window = e_window
         self.r_thresh = r_thresh
@@ -132,17 +132,17 @@ class Gaussian():
             n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
                 optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.prefixes[i], j)
-                if self.structure_types[i].upper() == 'TS':
-                    self.setup_transition_state_optimization(i, optimizer, self.structures[i][j])
-                if self.structure_types[i].upper() == 'CONST':
-                    self.setup_constrained_optimization(i, optimizer, self.structures[i][j])
+                if self.struc_types[i].upper() == 'TS':
+                    self.setup_ts_opt(i, optimizer, self.structures[i][j])
+                if self.struc_types[i].upper() == 'CONST':
+                    self.setup_const_opt(i, optimizer, self.structures[i][j])
                 else:
-                    self.setup_geometry_optimization(i, optimizer, self.structures[i][j])
+                    self.setup_geom_opt(i, optimizer, self.structures[i][j])
                 if optimizer not in self.optimizers[i]:
                     self.optimizers[i].append(optimizer)
         return self.optimizers
 
-    def setup_geometry_optimization(self, state, optimizer, cluster):
+    def setup_geom_opt(self, state, optimizer, cluster):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -188,7 +188,7 @@ class Gaussian():
 
         return
 
-    def setup_constrained_optimization(self, state, optimizer, cluster):
+    def setup_const_opt(self, state, optimizer, cluster):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -234,7 +234,7 @@ class Gaussian():
 
         return
 
-    def setup_transition_state_optimization(self, state, optimizer, cluster):
+    def setup_ts_opt(self, state, optimizer, cluster):
 
         atoms = cluster.get_chemical_symbols()
         coords = cluster.get_positions()
@@ -285,10 +285,10 @@ class Gaussian():
         for i in range(n_struct):
             sorted_optimizers = []
             for optimizer in self.optimizers[i]:
-                if self.structure_types[i].upper() == 'TS':
-                    output = self.run_transition_state_optimization(optimizer, self.transition_state_criteria[i], dry_run, verbose)
+                if self.struc_types[i].upper() == 'TS':
+                    output = self.run_ts_opt(optimizer, self.ts_criteria[i], dry_run, verbose)
                 else:
-                    output = self.run_geometry_optimization(optimizer, dry_run, verbose)
+                    output = self.run_geom_opt(optimizer, dry_run, verbose)
                 if output is not None:
                     energy, cluster = output
                     self.energies[i].append(energy)
@@ -297,7 +297,7 @@ class Gaussian():
             self.optimizers[i] = sorted_optimizers
         return
 
-    def run_geometry_optimization(self, optimizer, dry_run=False, verbose=False):
+    def run_geom_opt(self, optimizer, dry_run=False, verbose=False):
 
         if not os.path.exists('{:s}.log'.format(optimizer)) or not check_normal_termination('{:s}.log'.format(optimizer)):
             if not dry_run:
@@ -337,7 +337,7 @@ class Gaussian():
             print(optimizer, 'No output')
             return
 
-    def run_transition_state_optimization(self, optimizer, criteria, dry_run=False, verbose=False):
+    def run_ts_opt(self, optimizer, criteria, dry_run=False, verbose=False):
 
         if not os.path.exists('{:s}.log'.format(optimizer)) or not check_normal_termination('{:s}.log'.format(optimizer)):
             if not dry_run:
@@ -396,7 +396,7 @@ class Gaussian():
 
         return self.orbitals
 
-    def get_thermodynamics(self, temps=None, pressures=None, vib_cutoff=None):
+    def get_thermochem(self, temps=None, pressures=None, vib_cutoff=None):
 
         n_struct = len(self.structures)
 
@@ -451,7 +451,7 @@ class Gaussian():
             vib_cutoff = self.vib_cutoff
 
         if self.gibbs_energies == [[] for i in range(n_struct)] or temps != self.temps or pressures != self.pressures or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressures, vib_cutoff)
+            self.get_thermochem(temps, pressures, vib_cutoff)
 
         return self.gibbs_energies
 
@@ -467,7 +467,7 @@ class Gaussian():
             vib_cutoff = self.vib_cutoff
 
         if self.enthalpies == [[] for i in range(n_struct)] or temps != self.temps or pressures != self.pressures or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressures, vib_cutoff)
+            self.get_thermochem(temps, pressures, vib_cutoff)
 
         return self.enthalpies
 
@@ -483,7 +483,7 @@ class Gaussian():
             vib_cutoff = self.vib_cutoff
 
         if self.entropies == [[] for i in range(n_struct)] or temps != self.temps or pressures != self.pressures or vib_cutoff != self.vib_cutoff:
-            self.get_thermodynamics(temps, pressures, vib_cutoff)
+            self.get_thermochem(temps, pressures, vib_cutoff)
 
         return self.entropies
 
@@ -541,7 +541,7 @@ class Gaussian():
             self.clusters[i] = sorted_clusters
 
         if self.gibbs_energies != [[] for i in range(n_struct)]:
-            self.get_thermodynamics()
+            self.get_thermochem()
 
         if self.orbitals != [[] for i in range(n_struct)]:
             self.get_orbitals()
