@@ -540,6 +540,7 @@ class Gaussian():
 
         if self.add_prefixes is not None:
             self.add_sort_conformers(e_window, r_thresh, exclude_atoms, exclude_elements, reorder)
+            return
 
         n_struct = len(self.structures)
         for i in range(n_struct):
@@ -604,6 +605,9 @@ class Gaussian():
 
         n_struct = len(self.structures)
         for i in range(n_struct):
+            sorted_degeneracies = []
+            sorted_optimizers = []
+            sorted_energies = []
             sorted_clusters = []
             add_sorted_optimizers = []
             add_sorted_energies = []
@@ -628,10 +632,24 @@ class Gaussian():
                         break
                 if not status:
                     continue
+                sorted_degeneracies.append(self.degeneracies[i][m])
+                sorted_optimizers.append(self.optimizers[i][m])
+                sorted_energies.append(self.energies[i][m])
+                sorted_clusters.append(self.clusters[i][m])
                 add_sorted_optimizers.append(self.add_optimizers[i][m])
                 add_sorted_energies.append(self.add_energies[i][m])
+            self.degeneracies[i] = sorted_degeneracies
+            self.optimizers[i] = sorted_optimizers
+            self.energies[i] = sorted_energies
+            self.clusters[i] = sorted_clusters
             self.add_optimizers[i] = add_sorted_optimizers
             self.add_energies[i] = add_sorted_energies
+
+        if self.gibbs_energies != [[] for i in range(n_struct)]:
+            self.get_thermochem()
+
+        if self.orbitals != [[] for i in range(n_struct)]:
+            self.get_orbitals()
 
         return
 
