@@ -25,7 +25,6 @@ def check_geometry(cluster, criteria):
 
 def read_geom_opt(file_path):
 
-    n_cycles = 0
     energies = []
     clusters = []
 
@@ -38,9 +37,10 @@ def read_geom_opt(file_path):
                 coords = []
                 status = 1
             elif line.strip().startswith('SCF Done:'):
-                n_cycles += 1
                 energy = float(line.split()[4])
-            elif line.strip().startswith('!   Optimized Parameters   !') or (line.strip().startswith('Normal termination') and energies == []):
+            elif line.strip().startswith('Counterpoise corrected energy ='):
+                energy = float(line.split()[-1])
+            elif line.strip().startswith('!   Optimized Parameters   !'):
                 energies.append(energy)
                 clusters.append(Atoms(atoms, coords))
         elif status == 1:
@@ -57,7 +57,7 @@ def read_geom_opt(file_path):
                 coords.append([float(x) for x in line.split()[-3:]])
     f.close()
 
-    if energies == [] and n_cycles > 1:
+    if energies == []:
         energies.append(energy)
         clusters.append(Atoms(atoms, coords))
 
@@ -65,7 +65,6 @@ def read_geom_opt(file_path):
 
 def read_irc(file_path):
 
-    n_cycles = 0
     energies = []
     clusters = []
 
@@ -78,9 +77,10 @@ def read_irc(file_path):
                 coords = []
                 status = 1
             elif line.strip().startswith('SCF Done:'):
-                n_cycles += 1
                 energy = float(line.split()[4])
-            elif line.strip().startswith('# OF POINTS ALONG THE PATH') or (line.strip().startswith('Normal termination') and energies == []):
+            elif line.strip().startswith('Counterpoise corrected energy ='):
+                energy = float(line.split()[-1])
+            elif line.strip().startswith('# OF POINTS ALONG THE PATH'):
                 energies.append(energy)
                 clusters.append(Atoms(atoms, coords))
             elif line.strip().startswith('Calculation of FORWARD path complete.') or line.strip().startswith('Calculation of REVERSE path complete.'):
@@ -100,7 +100,7 @@ def read_irc(file_path):
                 coords.append([float(x) for x in line.split()[-3:]])
     f.close()
 
-    if energies == [] and n_cycles > 1:
+    if energies == []:
         energies.append(energy)
         clusters.append(Atoms(atoms, coords))
 
@@ -229,6 +229,8 @@ def read_thermochem(file_path, temp=None, pressure=None, vib_cutoff=0.0,
         if status == 0:
             if line.strip().startswith('SCF Done:'):
                 E_e = float(line.split()[4])
+            elif line.strip().startswith('Counterpoise corrected energy ='):
+                energy = float(line.split()[-1])
             elif line.strip().startswith('Harmonic frequencies'):
                 status = 1
         elif status == 1:
@@ -309,6 +311,8 @@ def read_thermochem_salman(file_path, new_constants=False):
         if status == 0:
             if line.strip().startswith('SCF Done:'):
                 E_e = float(line.split()[4])
+            elif line.strip().startswith('Counterpoise corrected energy ='):
+                energy = float(line.split()[-1])
             elif line.strip().startswith('Harmonic frequencies'):
                 status = 1
         elif status == 1:

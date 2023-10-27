@@ -23,7 +23,8 @@ class Gaussian():
             e_window=0.00956161, r_thresh=0.125,
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
-            degeneracies=1
+            degeneracies=1,
+            add_prefixes=None
             ):
 
         if isinstance(which, int):
@@ -124,6 +125,11 @@ class Gaussian():
         self.gibbs_energies = [[] for i in range(n_struct)]
         self.orbitals = [[] for i in range(n_struct)]
 
+        self.add_prefixes = add_prefixes
+
+        self.add_optimizers = [[] for i in range(n_struct)]
+        self.add_energies = [[] for i in range(n_struct)]
+
         return
 
     def setup(self):
@@ -140,7 +146,19 @@ class Gaussian():
                     self.setup_geom_opt(i, optimizer, self.structures[i][j])
                 if optimizer not in self.optimizers[i]:
                     self.optimizers[i].append(optimizer)
-        return self.optimizers
+        if self.add_prefixes is not None:
+            self.add_setup()
+        return
+
+    def add_setup(self):
+        n_struct = len(self.structures)
+        for i in range(n_struct):
+            n_digits = str(len(str(len(self.structures[i]))))
+            for j, _ in enumerate(self.structures[i]):
+                optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.add_prefixes[i], j)
+                if optimizer not in self.add_optimizers[i]:
+                    self.add_optimizers[i].append(optimizer)
+        return
 
     def setup_geom_opt(self, state, optimizer, cluster):
 
@@ -295,6 +313,22 @@ class Gaussian():
                     self.clusters[i].append(cluster)
                     sorted_optimizers.append(optimizer)
             self.optimizers[i] = sorted_optimizers
+        if self.add_prefixes is not None:
+            self.add_run()
+        return
+
+    def add_run(self):
+        n_struct = len(self.structures)
+        for i in range(n_struct):
+            for optimizer in self.add_optimizers[i]:
+                energy = 0.0
+                if os.path.exists('{:s}.log'.format(optimizer)):
+                    f = open('{:s}.log'.format(optimizer), 'rt')
+                    for line in f:
+                        if line.strip().startswith('BSSE energy'):
+                            energy = float(line.split()[-1])
+                    f.close()
+                self.add_energies[i].append(energy)
         return
 
     def run_geom_opt(self, optimizer, dry_run=False, verbose=False):
@@ -504,6 +538,9 @@ class Gaussian():
         elif isinstance(exclude_elements, str):
             exclude_elements = [exclude_elements] * n_struct
 
+        if self.add_prefixes is not None:
+            self.add_sort_conformers(e_window, r_thresh, exclude_atoms, exclude_elements, reorder)
+
         n_struct = len(self.structures)
         for i in range(n_struct):
             sorted_degeneracies = []
@@ -545,6 +582,56 @@ class Gaussian():
 
         if self.orbitals != [[] for i in range(n_struct)]:
             self.get_orbitals()
+
+        return
+
+    def add_sort_conformers(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
+
+        if e_window is None:
+            e_window = self.e_window
+        if r_thresh is None:
+            r_thresh = self.r_thresh
+
+        if exclude_atoms is None:
+            exclude_atoms = self.exclude_atoms
+        elif isinstance(exclude_atoms[0], int):
+            exclude_atoms = [exclude_atoms] * n_struct
+
+        if exclude_elements is None:
+            exclude_elements = self.exclude_elements
+        elif isinstance(exclude_elements, str):
+            exclude_elements = [exclude_elements] * n_struct
+
+        n_struct = len(self.structures)
+        for i in range(n_struct):
+            sorted_clusters = []
+            add_sorted_optimizers = []
+            add_sorted_energies = []
+            if reorder:
+                iterator = numpy.argsort(self.energies[i], kind='stable')
+            else:
+                iterator = [m for m, _ in enumerate(self.energies[i])]
+            for m in iterator:
+                if self.energies[i][m] > min(self.energies[i]) + e_window:
+                    continue
+                status = True
+                for sorted_cluster in sorted_clusters:
+                    atoms = self.clusters[i][m].get_chemical_symbols()
+                    coords = self.clusters[i][m].get_positions()
+                    sorted_coords = sorted_cluster.get_positions()
+                    #match = MatchCoords(coords, sorted_coords)
+                    #match.fit()
+                    #coords = match.transform(coords)
+                    indices = [j for j, X in enumerate(atoms) if j not in exclude_atoms[i] and X not in exclude_elements[i]]
+                    if numpy.sqrt(numpy.mean((coords[indices]-sorted_coords[indices])**2)) < r_thresh:
+                        status = False
+                        break
+                if not status:
+                    continue
+                add_sorted_optimizers.append(self.add_optimizers[i][m])
+                add_sorted_energies.append(self.add_energies[i][m])
+            self.add_optimizers[i] = add_sorted_optimizers
+            self.add_energies[i] = add_sorted_energies
 
         return
 
