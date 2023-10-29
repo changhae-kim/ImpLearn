@@ -12,7 +12,7 @@ class Gaussian():
 
     def __init__(self, file_paths, prefixes,
             which=':', file_type='xyz',
-            struc_types='EQ',
+            struct_types='EQ',
             charges=0, mults=4,
             temps=373.15, pressures=1.0, vib_cutoff=100.0,
             n_proc=24, method='wB97XD/Gen',
@@ -46,10 +46,10 @@ class Gaussian():
 
         n_struct = len(self.structures)
 
-        if isinstance(struc_types, str):
-            self.struc_types = [struc_types] * n_struct
+        if isinstance(struct_types, str):
+            self.struct_types = [struct_types] * n_struct
         else:
-            self.struc_types = struc_types
+            self.struct_types = struct_types
 
         if isinstance(charges, int):
             self.charges = [charges] * n_struct
@@ -138,9 +138,9 @@ class Gaussian():
             n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
                 optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.prefixes[i], j)
-                if self.struc_types[i].upper() == 'TS':
+                if self.struct_types[i].upper() == 'TS':
                     self.setup_ts_opt(i, optimizer, self.structures[i][j])
-                if self.struc_types[i].upper() == 'CONST':
+                if self.struct_types[i].upper() == 'CONST':
                     self.setup_const_opt(i, optimizer, self.structures[i][j])
                 else:
                     self.setup_geom_opt(i, optimizer, self.structures[i][j])
@@ -303,7 +303,7 @@ class Gaussian():
         for i in range(n_struct):
             sorted_optimizers = []
             for optimizer in self.optimizers[i]:
-                if self.struc_types[i].upper() == 'TS':
+                if self.struct_types[i].upper() == 'TS':
                     output = self.run_ts_opt(optimizer, self.ts_criteria[i], dry_run, verbose)
                 else:
                     output = self.run_geom_opt(optimizer, dry_run, verbose)
