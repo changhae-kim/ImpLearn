@@ -210,7 +210,7 @@ def read_vib_modes(file_path):
 
 def read_thermochem(file_path, temp=None, pressure=None, vib_cutoff=0.0,
         elec=True, trans=False, rot=False, vib=True,
-        verbose=False):
+        gibbs_only=True):
 
     kB = 1.380649e-23 / 4.3597447222071e-18
     K = 6.62607015e-34 * 2.99792458e+8 / 1.380649e-23 * 100.0
@@ -283,10 +283,10 @@ def read_thermochem(file_path, temp=None, pressure=None, vib_cutoff=0.0,
     H = E + kB * T
     G = H - T * S
 
-    if verbose:
-        return E_e, H, S, G
-    else:
+    if gibbs_only:
         return G
+    else:
+        return E_e, H, S, G
 
 def read_thermochem_salman(file_path, new_constants=False):
 
