@@ -466,7 +466,11 @@ class Gaussian():
                 rot = False
                 vib = True
             for optimizer in self.optimizers[i]:
+<<<<<<< HEAD
                 E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressures[i], vib_cutoff=vib_cutoff, elec=elec, trans=trans, rot=rot, vib=vib, gibbs_only=False)
+=======
+                E_e, H, S, G = read_thermochem('{:s}.log'.format(optimizer), temp=temps[i], pressure=pressures[i], vib_cutoff=vib_cutoff, elec=elec, trans=trans, rot=rot, vib=vib, gibbs_only=True)
+>>>>>>> 445edec5b0d19f47804b51b5e28bccf8c26a2ab5
                 self.enthalpies[i].append(H)
                 self.entropies[i].append(S)
                 self.gibbs_energies[i].append(G)
