@@ -27,7 +27,7 @@ class MatchCoords():
 
         rot = Rotation.from_euler('zyx', rotat)
 
-        return rot.apply(coords + trans)
+        return rot.apply(coords) + trans
 
     def objective(self, params, match_coords, target_coords):
 
