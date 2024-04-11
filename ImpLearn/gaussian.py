@@ -24,7 +24,7 @@ class Gaussian():
             exclude_atoms=[0, 1, 2, 3],
             exclude_elements='H',
             degeneracies=1,
-            add_prefixes=None
+            cp_prefixes=None
             ):
 
         if isinstance(which, int):
@@ -125,10 +125,10 @@ class Gaussian():
         self.gibbs_energies = [[] for i in range(n_struct)]
         self.orbitals = [[] for i in range(n_struct)]
 
-        self.add_prefixes = add_prefixes
+        self.cp_prefixes = cp_prefixes
 
-        self.add_optimizers = [[] for i in range(n_struct)]
-        self.add_energies = [[] for i in range(n_struct)]
+        self.cp_optimizers = [[] for i in range(n_struct)]
+        self.cp_energies = [[] for i in range(n_struct)]
 
         return
 
@@ -146,18 +146,18 @@ class Gaussian():
                     self.setup_geom_opt(i, optimizer, self.structures[i][j])
                 if optimizer not in self.optimizers[i]:
                     self.optimizers[i].append(optimizer)
-        if self.add_prefixes is not None:
-            self.add_setup()
+        if self.cp_prefixes is not None:
+            self.cp_setup()
         return
 
-    def add_setup(self):
+    def cp_setup(self):
         n_struct = len(self.structures)
         for i in range(n_struct):
             n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
-                optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.add_prefixes[i], j)
-                if optimizer not in self.add_optimizers[i]:
-                    self.add_optimizers[i].append(optimizer)
+                optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.cp_prefixes[i], j)
+                if optimizer not in self.cp_optimizers[i]:
+                    self.cp_optimizers[i].append(optimizer)
         return
 
     def setup_geom_opt(self, state, optimizer, cluster):
@@ -313,14 +313,14 @@ class Gaussian():
                     self.clusters[i].append(cluster)
                     sorted_optimizers.append(optimizer)
             self.optimizers[i] = sorted_optimizers
-        if self.add_prefixes is not None:
-            self.add_run()
+        if self.cp_prefixes is not None:
+            self.cp_run()
         return
 
-    def add_run(self):
+    def cp_run(self):
         n_struct = len(self.structures)
         for i in range(n_struct):
-            for optimizer in self.add_optimizers[i]:
+            for optimizer in self.cp_optimizers[i]:
                 energy = 0.0
                 if os.path.exists('{:s}.log'.format(optimizer)):
                     f = open('{:s}.log'.format(optimizer), 'rt')
@@ -328,7 +328,7 @@ class Gaussian():
                         if line.strip().startswith('BSSE energy'):
                             energy = float(line.split()[-1])
                     f.close()
-                self.add_energies[i].append(energy)
+                self.cp_energies[i].append(energy)
         return
 
     def run_geom_opt(self, optimizer, dry_run=False, verbose=False):
@@ -538,8 +538,8 @@ class Gaussian():
         elif isinstance(exclude_elements, str):
             exclude_elements = [exclude_elements] * n_struct
 
-        if self.add_prefixes is not None:
-            self.add_sort_conformers(e_window, r_thresh, exclude_atoms, exclude_elements, reorder)
+        if self.cp_prefixes is not None:
+            self.cp_sort_conformers(e_window, r_thresh, exclude_atoms, exclude_elements, reorder)
             return
 
         n_struct = len(self.structures)
@@ -586,7 +586,7 @@ class Gaussian():
 
         return
 
-    def add_sort_conformers(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
+    def cp_sort_conformers(self, e_window=None, r_thresh=None, exclude_atoms=None, exclude_elements=None, reorder=True):
 
         if e_window is None:
             e_window = self.e_window
@@ -609,8 +609,8 @@ class Gaussian():
             sorted_optimizers = []
             sorted_energies = []
             sorted_clusters = []
-            add_sorted_optimizers = []
-            add_sorted_energies = []
+            cp_sorted_optimizers = []
+            cp_sorted_energies = []
             if reorder:
                 iterator = numpy.argsort(self.energies[i], kind='stable')
             else:
@@ -636,14 +636,14 @@ class Gaussian():
                 sorted_optimizers.append(self.optimizers[i][m])
                 sorted_energies.append(self.energies[i][m])
                 sorted_clusters.append(self.clusters[i][m])
-                add_sorted_optimizers.append(self.add_optimizers[i][m])
-                add_sorted_energies.append(self.add_energies[i][m])
+                cp_sorted_optimizers.append(self.cp_optimizers[i][m])
+                cp_sorted_energies.append(self.cp_energies[i][m])
             self.degeneracies[i] = sorted_degeneracies
             self.optimizers[i] = sorted_optimizers
             self.energies[i] = sorted_energies
             self.clusters[i] = sorted_clusters
-            self.add_optimizers[i] = add_sorted_optimizers
-            self.add_energies[i] = add_sorted_energies
+            self.cp_optimizers[i] = cp_sorted_optimizers
+            self.cp_energies[i] = cp_sorted_energies
 
         if self.gibbs_energies != [[] for i in range(n_struct)]:
             self.get_thermochem()
