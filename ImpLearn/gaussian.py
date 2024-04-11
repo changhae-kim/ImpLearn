@@ -111,7 +111,7 @@ class Gaussian():
             self.exclude_elements = exclude_elements
 
         if isinstance(degeneracies, int):
-            self.degeneracies = [[degeneracies] for i in range(n_struct)]
+            self.degeneracies = [[degeneracies for _ in self.structures[i]] for i in range(n_struct)]
         elif isinstance(degeneracies[0], int):
             self.degeneracies = [[g for g in degeneracies] for i in range(n_struct)]
         else:
