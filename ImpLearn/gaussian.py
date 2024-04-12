@@ -314,14 +314,15 @@ class Gaussian():
                     sorted_optimizers.append(optimizer)
             self.optimizers[i] = sorted_optimizers
         if self.cp_prefixes is not None:
-            self.cp_run()
+            self.cp_run(verbose)
         return
 
-    def cp_run(self):
+    def cp_run(self, verbose=False):
         n_struct = len(self.structures)
         for i in range(n_struct):
+            sorted_optimizers = []
             for optimizer in self.cp_optimizers[i]:
-                energy = None
+                energy = 0.0
                 if os.path.exists('{:s}.log'.format(optimizer)):
                     f = open('{:s}.log'.format(optimizer), 'rt')
                     for line in f:
@@ -332,10 +333,14 @@ class Gaussian():
                     f = open('{:s}.ilx'.format(optimizer), 'rt')
                     code = f.read().strip()
                     f.close()
-                    if code == 'drop':
+                    if code.startswith('drop'):
+                        if verbose:
+                            print(optimizer, 'Override drop')
                         energy = None
                 if energy is not None:
                     self.cp_energies[i].append(energy)
+                    sorted_optimizers.append(optimizer)
+            self.cp_optimizers[i] = sorted_optimizers
         return
 
     def run_geom_opt(self, optimizer, dry_run=False, verbose=False):
@@ -351,9 +356,9 @@ class Gaussian():
                 f = open('{:s}.ilx'.format(optimizer), 'rt')
                 code = f.read().strip()
                 f.close()
-                if code == 'keep':
+                if code.startswith('keep'):
                     status = -1
-                elif code == 'drop':
+                elif code.startswith('drop'):
                     status = -2
             if status == 0:
                 return energies[-1], clusters[-1]
@@ -393,9 +398,9 @@ class Gaussian():
                 f = open('{:s}.ilx'.format(optimizer), 'rt')
                 code = f.read().strip()
                 f.close()
-                if code == 'keep':
+                if code.startswith('keep'):
                     status = -1
-                elif code == 'drop':
+                elif code.startswith('drop'):
                     status = -2
             if status == 0:
                 return energies[-1], clusters[-1]
