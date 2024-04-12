@@ -321,14 +321,21 @@ class Gaussian():
         n_struct = len(self.structures)
         for i in range(n_struct):
             for optimizer in self.cp_optimizers[i]:
-                energy = 0.0
+                energy = None
                 if os.path.exists('{:s}.log'.format(optimizer)):
                     f = open('{:s}.log'.format(optimizer), 'rt')
                     for line in f:
                         if line.strip().startswith('BSSE energy'):
                             energy = float(line.split()[-1])
                     f.close()
-                self.cp_energies[i].append(energy)
+                if os.path.exists('{:s}.ilx'.format(optimizer)):
+                    f = open('{:s}.ilx'.format(optimizer), 'rt')
+                    code = f.read().strip()
+                    f.close()
+                    if code == 'drop':
+                        energy = None
+                if energy is not None:
+                    self.cp_energies[i].append(energy)
         return
 
     def run_geom_opt(self, optimizer, dry_run=False, verbose=False):
