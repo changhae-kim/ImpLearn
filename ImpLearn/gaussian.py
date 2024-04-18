@@ -670,6 +670,11 @@ class Gaussian():
         else:
             degeneracies = degeneracies
 
+        add_degeneracies = [[] for i in range(n_struct)]
+        add_optimizers = [[] for i in range(n_struct)]
+        add_energies = [[] for i in range(n_struct)]
+        add_clusters = [[] for i in range(n_struct)]
+
         for i in range(n_struct):
             dirname, basename = os.path.split(prefixes[i])
             for filename in os.listdir(dirname):
@@ -677,24 +682,30 @@ class Gaussian():
                     continue
                 optimizer = os.path.join(dirname, filename[:-4])
                 if self.struct_types[i].upper() == 'TS':
-                    output = self.run_ts_opt(optimizer, self.ts_criteria[i], dry_run=True, verbose)
+                    output = self.run_ts_opt(optimizer, self.ts_criteria[i], True, verbose)
                 else:
-                    output = self.run_geom_opt(optimizer, dry_run=True, verbose)
+                    output = self.run_geom_opt(optimizer, True, verbose)
                 if output is not None:
                     energy, cluster = output
-                    self.degeneracies[i].append(degeneracies[i])
-                    self.optimizers[i].append(optimizer)
-                    self.energies[i].append(energy)
-                    self.clusters[i].append(cluster)
+                    add_degeneracies[i].append(degeneracies[i])
+                    add_optimizers[i].append(optimizer)
+                    add_energies[i].append(energy)
+                    add_clusters[i].append(cluster)
+            self.degeneracies[i] += add_degeneracies[i]
+            self.optimizers[i] += add_optimizers[i]
+            self.energies[i] += add_energies[i]
+            self.clusters[i] += add_clusters[i]
 
         if cp_prefixes is not None:
 
+            add_cp_optimizers = [[] for i in range(n_struct)]
+            add_cp_energies = [[] for i in range(n_struct)]
+
             for i in range(n_struct):
-                dirname, basename = os.path.split(cp_prefixes[i])
-                for filename in os.listdir(dirname):
-                    if not filename.startswith(basename) or not filename.endswith('.log'):
-                        continue
-                    optimizer = os.path.join(dirname, filename[:-4])
+                for j, _ in enumerate(add_energies[i]):
+                    dirname = os.path.dirname(cp_prefixes[i])
+                    basename = os.path.basename(add_optimizers[i][j])
+                    optimizer = os.path.join(dirname, basename)
                     energy = 0.0
                     if os.path.exists('{:s}.log'.format(optimizer)):
                         f = open('{:s}.log'.format(optimizer), 'rt')
@@ -711,8 +722,10 @@ class Gaussian():
                                 print(optimizer, 'Override drop')
                             energy = None
                     if energy is not None:
-                        self.cp_optimizers[i].append(optimizer)
-                        self.cp_energies[i].append(energy)
+                        add_cp_optimizers[i].append(optimizer)
+                        add_cp_energies[i].append(energy)
+                self.cp_optimizers[i] += add_cp_optimizers[i]
+                self.cp_energies[i] += add_cp_energies[i]
 
         return
 
