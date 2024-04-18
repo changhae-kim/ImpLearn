@@ -133,8 +133,7 @@ class Gaussian():
         return
 
     def setup(self):
-        n_struct = len(self.structures)
-        for i in range(n_struct):
+        for i, _ in enumerate(self.structures):
             n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
                 optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.prefixes[i], j)
@@ -151,8 +150,7 @@ class Gaussian():
         return
 
     def cp_setup(self):
-        n_struct = len(self.structures)
-        for i in range(n_struct):
+        for i, _ in enumerate(self.structures):
             n_digits = str(len(str(len(self.structures[i]))))
             for j, _ in enumerate(self.structures[i]):
                 optimizer = ('{:s}.{:0' + n_digits + 'd}').format(self.cp_prefixes[i], j)
@@ -299,8 +297,7 @@ class Gaussian():
         return
 
     def run(self, dry_run=False, verbose=False):
-        n_struct = len(self.structures)
-        for i in range(n_struct):
+        for i, _ in enumerate(self.structures):
             sorted_optimizers = []
             for optimizer in self.optimizers[i]:
                 if self.struct_types[i].upper() == 'TS':
@@ -318,8 +315,7 @@ class Gaussian():
         return
 
     def cp_run(self, verbose=False):
-        n_struct = len(self.structures)
-        for i in range(n_struct):
+        for i, _ in enumerate(self.structures):
             sorted_optimizers = []
             for optimizer in self.cp_optimizers[i]:
                 energy = 0.0
@@ -621,8 +617,8 @@ class Gaussian():
             sorted_optimizers = []
             sorted_energies = []
             sorted_clusters = []
-            cp_sorted_optimizers = []
-            cp_sorted_energies = []
+            sorted_cp_optimizers = []
+            sorted_cp_energies = []
             if reorder:
                 iterator = numpy.argsort(self.energies[i], kind='stable')
             else:
@@ -648,20 +644,75 @@ class Gaussian():
                 sorted_optimizers.append(self.optimizers[i][m])
                 sorted_energies.append(self.energies[i][m])
                 sorted_clusters.append(self.clusters[i][m])
-                cp_sorted_optimizers.append(self.cp_optimizers[i][m])
-                cp_sorted_energies.append(self.cp_energies[i][m])
+                sorted_cp_optimizers.append(self.cp_optimizers[i][m])
+                sorted_cp_energies.append(self.cp_energies[i][m])
             self.degeneracies[i] = sorted_degeneracies
             self.optimizers[i] = sorted_optimizers
             self.energies[i] = sorted_energies
             self.clusters[i] = sorted_clusters
-            self.cp_optimizers[i] = cp_sorted_optimizers
-            self.cp_energies[i] = cp_sorted_energies
+            self.cp_optimizers[i] = sorted_cp_optimizers
+            self.cp_energies[i] = sorted_cp_energies
 
         if self.gibbs_energies != [[] for i in range(n_struct)]:
             self.get_thermochem()
 
         if self.orbitals != [[] for i in range(n_struct)]:
             self.get_orbitals()
+
+        return
+
+    def add_conformers(self, prefixes, degeneracies=1, verbose=False, cp_prefixes=None):
+
+        n_struct = len(self.structures)
+
+        if isinstance(degeneracies, int):
+            degeneracies = [degeneracies] * n_struct
+        else:
+            degeneracies = degeneracies
+
+        for i in range(n_struct):
+            dirname, basename = os.path.split(prefixes[i])
+            for filename in os.listdir(dirname):
+                if not filename.startswith(basename) or not filename.endswith('.log'):
+                    continue
+                optimizer = os.path.join(dirname, filename[:-4])
+                if self.struct_types[i].upper() == 'TS':
+                    output = self.run_ts_opt(optimizer, self.ts_criteria[i], dry_run=True, verbose)
+                else:
+                    output = self.run_geom_opt(optimizer, dry_run=True, verbose)
+                if output is not None:
+                    energy, cluster = output
+                    self.degeneracies[i].append(degeneracies[i])
+                    self.optimizers[i].append(optimizer)
+                    self.energies[i].append(energy)
+                    self.clusters[i].append(cluster)
+
+        if cp_prefixes is not None:
+
+            for i in range(n_struct):
+                dirname, basename = os.path.split(cp_prefixes[i])
+                for filename in os.listdir(dirname):
+                    if not filename.startswith(basename) or not filename.endswith('.log'):
+                        continue
+                    optimizer = os.path.join(dirname, filename[:-4])
+                    energy = 0.0
+                    if os.path.exists('{:s}.log'.format(optimizer)):
+                        f = open('{:s}.log'.format(optimizer), 'rt')
+                        for line in f:
+                            if line.strip().startswith('BSSE energy'):
+                                energy = float(line.split()[-1])
+                        f.close()
+                    if os.path.exists('{:s}.ilx'.format(optimizer)):
+                        f = open('{:s}.ilx'.format(optimizer), 'rt')
+                        code = f.read().strip()
+                        f.close()
+                        if code.startswith('drop'):
+                            if verbose:
+                                print(optimizer, 'Override drop')
+                            energy = None
+                    if energy is not None:
+                        self.cp_optimizers[i].append(optimizer)
+                        self.cp_energies[i].append(energy)
 
         return
 
