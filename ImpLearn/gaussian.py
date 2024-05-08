@@ -297,46 +297,55 @@ class Gaussian():
         return
 
     def run(self, dry_run=False, verbose=False):
+        if self.cp_prefixes is not None:
+            self.cp_run(dry_run, verbose)
+            return
         for i, _ in enumerate(self.structures):
+            sorted_degeneracies = []
             sorted_optimizers = []
-            for optimizer in self.optimizers[i]:
+            for j, _ in enumerate(self.optimizers[i]):
                 if self.struct_types[i].upper() == 'TS':
-                    output = self.run_ts_opt(optimizer, self.ts_criteria[i], dry_run, verbose)
+                    output = self.run_ts_opt(self.optimizers[i][j], self.ts_criteria[i], dry_run, verbose)
                 else:
-                    output = self.run_geom_opt(optimizer, dry_run, verbose)
+                    output = self.run_geom_opt(self.optimizers[i][j], dry_run, verbose)
                 if output is not None:
                     energy, cluster = output
                     self.energies[i].append(energy)
                     self.clusters[i].append(cluster)
-                    sorted_optimizers.append(optimizer)
+                    sorted_degeneracies.append(self.degeneracies[i][j])
+                    sorted_optimizers.append(self.optimizers[i][j])
+            self.degeneracies[i] = sorted_degeneracies
             self.optimizers[i] = sorted_optimizers
-        if self.cp_prefixes is not None:
-            self.cp_run(verbose)
         return
 
-    def cp_run(self, verbose=False):
+    def cp_run(self, dry_run=False, verbose=False):
         for i, _ in enumerate(self.structures):
+            sorted_degeneracies = []
             sorted_optimizers = []
-            for optimizer in self.cp_optimizers[i]:
-                energy = 0.0
-                if os.path.exists('{:s}.log'.format(optimizer)):
-                    f = open('{:s}.log'.format(optimizer), 'rt')
-                    for line in f:
-                        if line.strip().startswith('BSSE energy'):
-                            energy = float(line.split()[-1])
-                    f.close()
-                if os.path.exists('{:s}.ilx'.format(optimizer)):
-                    f = open('{:s}.ilx'.format(optimizer), 'rt')
-                    code = f.read().strip()
-                    f.close()
-                    if code.startswith('drop'):
-                        if verbose:
-                            print(optimizer, 'Override drop')
-                        energy = None
-                if energy is not None:
-                    self.cp_energies[i].append(energy)
-                    sorted_optimizers.append(optimizer)
-            self.cp_optimizers[i] = sorted_optimizers
+            sorted_cp_optimizers = []
+            for j, _ in enumerate(self.optimizers[i]):
+                if self.struct_types[i].upper() == 'TS':
+                    output = self.run_ts_opt(self.optimizers[i][j], self.ts_criteria[i], dry_run, verbose)
+                else:
+                    output = self.run_geom_opt(self.optimizers[i][j], dry_run, verbose)
+                if output is not None:
+                    energy, cluster = output
+                    cp_energy = 0.0
+                    if os.path.exists('{:s}.log'.format(self.cp_optimizers[i][j])):
+                        f = open('{:s}.log'.format(self.cp_optimizers[i][j]), 'rt')
+                        for line in f:
+                            if line.strip().startswith('BSSE energy'):
+                                cp_energy = float(line.split()[-1])
+                        f.close()
+                    self.energies[i].append(energy)
+                    self.clusters[i].append(cluster)
+                    self.cp_energies[i].append(cp_energy)
+                    sorted_degeneracies.append(self.degeneracies[i][j])
+                    sorted_optimizers.append(self.optimizers[i][j])
+                    sorted_cp_optimizers.append(self.cp_optimizers[i][j])
+            self.degeneracies[i] = sorted_degeneracies
+            self.optimizers[i] = sorted_optimizers
+            self.cp_optimizers[i] = sorted_cp_optimizers
         return
 
     def run_geom_opt(self, optimizer, dry_run=False, verbose=False):
@@ -552,6 +561,13 @@ class Gaussian():
 
         n_struct = len(self.structures)
         for i in range(n_struct):
+            if len(self.degeneracies[i]) != len(self.optimizers[i]) or len(self.degeneracies[i]) != len(self.energies[i]) or len(self.degeneracies[i]) != len(self.clusters[i]):
+                print(self.prefixes[i])
+                print('degeneracies  ', len(self.degeneracies[i]))
+                print('optimizers    ', len(self.optimizers[i]))
+                print('energies      ', len(self.energies[i]))
+                print('clsuters      ', len(self.clusters[i]))
+                exit()
             sorted_degeneracies = []
             sorted_optimizers = []
             sorted_energies = []
@@ -613,6 +629,15 @@ class Gaussian():
 
         n_struct = len(self.structures)
         for i in range(n_struct):
+            if len(self.degeneracies[i]) != len(self.optimizers[i]) or len(self.degeneracies[i]) != len(self.energies[i]) or len(self.degeneracies[i]) != len(self.clusters[i]) or len(self.degeneracies[i]) != len(self.cp_optimizers[i]) or len(self.degeneracies[i]) != len(self.cp_energies[i]):
+                print(self.prefixes[i])
+                print('degeneracies  ', len(self.degeneracies[i]))
+                print('optimizers    ', len(self.optimizers[i]))
+                print('energies      ', len(self.energies[i]))
+                print('clsuters      ', len(self.clusters[i]))
+                print('cp_optimizers ', len(self.cp_optimizers[i]))
+                print('cp_energies   ', len(self.cp_energies[i]))
+                exit()
             sorted_degeneracies = []
             sorted_optimizers = []
             sorted_energies = []
