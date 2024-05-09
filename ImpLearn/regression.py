@@ -148,7 +148,7 @@ class Kernel():
         if self.y_norm is not None:
             y = self.y_scaler.inverse_transform(y[:, numpy.newaxis]).ravel()
         y_pred = self.predict_loo()
-        y_err = y - y_pred
+        y_err = y_pred - y
         return y_err
 
     def loss(self):
