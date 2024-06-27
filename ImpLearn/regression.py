@@ -75,7 +75,7 @@ class ReMLKR(MLKR):
 
 class Kernel():
 
-    def __init__(self, norm='MinMax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0, random_state=None):
+    def __init__(self, norm='MinMax', X_norm=None, y_norm=None, regularizer='L0', alpha=0.0, init='random', random_state=None):
         if X_norm is None:
             X_norm = norm
         if y_norm is None:
@@ -84,6 +84,7 @@ class Kernel():
         self.y_norm = y_norm
         self.regularizer = regularizer
         self.alpha = alpha
+        self.init = init
         self.random_state = random_state
         self.X_train = None
         self.y_train = None
@@ -115,7 +116,7 @@ class Kernel():
             self.y_scaler.fit(self.y_train[:, numpy.newaxis])
             self.y_train = self.y_scaler.transform(self.y_train[:, numpy.newaxis]).ravel()
 
-        model = ReMLKR(weights=self.weights, regularizer=self.regularizer, alpha=self.alpha, random_state=self.random_state)
+        model = ReMLKR(weights=self.weights, regularizer=self.regularizer, alpha=self.alpha, init=self.init, random_state=self.random_state)
         model.fit(self.X_train, self.y_train)
 
         self.matrix = model.get_mahalanobis_matrix()
