@@ -3,6 +3,26 @@ import numpy
 from ase import Atoms
 
 
+def write_clusters(file_path, clusters, comments=None):
+
+    if comments is None:
+        comments = ['' for cluster in clusters]
+
+    lines = []
+    for i, _ in enumerate(clusters):
+        atoms = clusters[i].get_chemical_symbols()
+        coords = clusters[i].get_positions()
+        lines.append('{:d}\n'.format(len(atoms)))
+        lines.append('{:s}\n'.format(comments[i]))
+        for j, _ in enumerate(atoms):
+            lines.append('{:2s} {:9.6f} {:9.6f} {:9.6f}\n'.format(atoms[j], *coords[j]))
+
+    f = open(file_path, 'wt')
+    f.writelines(lines)
+    f.close()
+
+    return
+
 def check_imaginary_frequency(file_path):
     imgfrq = 0
     f = open(file_path, 'rt')
