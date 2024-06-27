@@ -3,6 +3,16 @@ import numpy
 from ase import Atoms
 
 
+def check_imaginary_frequency(file_path):
+    imgfrq = 0
+    f = open(file_path, 'rt')
+    for line in f:
+        if line.rstrip().endswith('ignored.'):
+            imgfrq = int(line.split()[0])
+            break
+    f.close()
+    return imgfrq
+
 def check_normal_termination(file_path):
     f = open(file_path, 'rt')
     lines = f.readlines()
