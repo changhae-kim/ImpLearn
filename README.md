@@ -9,7 +9,10 @@ This is an implementation of the importance learning algorithm, as presented in 
 The codes have been tested with the following versions of software, though older or newer versions could still be compatible:
 ```
 dependencies:
+  - crest==2.12
+  - g16
   - python==3.10.4
+  - xtb==6.6.0
   - pip:
     - ase==3.22.1
     - joblib==1.1.0
