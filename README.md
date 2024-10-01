@@ -12,7 +12,7 @@ These are the descriptions of the subdirectories.
 
 ## Dependencies
 
-The codes have been tested with these versions of software, though older or newer versions could still be compatible:
+The codes have been tested with these versions of software, though older or newer versions could be compatible:
 ```
 dependencies:
   - crest==2.12
