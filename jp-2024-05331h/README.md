@@ -63,7 +63,7 @@ In principle, you might expect to reproduce the "exact same" outpts as the manus
 
 * The RNGs in the scripts use a hard-coded seed, so the scripts reproduce the same behaviors each time. However, CREST uses a new random seed each time, finding different candidate conformers.
 
-* Due to the order-of-magnitude variations in the site-specific rates, the sampling weight evaluation can be sensitive to the machine precision and architecture. For example, this code chooses different sites on computers with Intel CPUs vs. AMD CPUs due to differences in the 15th decimal place.
+* Due to the order-of-magnitude variations in the site-specific rates, the sampling weight evaluation can be sensitive to the machine precision and architecture. For example, this code chooses different sites on computers with Intel CPUs vs. AMD CPUs. The differences arise the 15th decimal place at first but then propagate to more significant digits.
 
 ## Directories
 
