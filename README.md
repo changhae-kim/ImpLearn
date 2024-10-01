@@ -8,11 +8,12 @@ The directory `jp-2024-05331h` contains the scripts which were used to run the c
 
 The codes have been tested with the following versions of software, though older or newer versions could still be compatible:
 ```
-python==3.10.4
-ase==3.22.1
-joblib==1.1.0
-metric-learn==0.6.2
-numpy==1.23.1
-scikit-learn==1.1.1
-scipy==1.8.1
+- python==3.10.4
+- pip:
+  - ase==3.22.1
+  - joblib==1.1.0
+  - metric-learn==0.6.2
+  - numpy==1.23.1
+  - scikit-learn==1.1.1
+  - scipy==1.8.1
 ```
