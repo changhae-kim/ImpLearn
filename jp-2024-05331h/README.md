@@ -59,11 +59,11 @@ python main.py 473.15 1 -
 
 ## Caveats
 
-In principle, you might expect to reproduce the "exact same" outpts as the manuscript jp-2024-05331h. Here, we are not concerned about the physics, which should be reproducible anytime anywhere, but we mean the computation: sampling the exact same set of sites in the exact same order. In practice, we expect your sampled sites to deviate after a few iterations. These are the reasons.
+In principle, you might expect to reproduce the "exact same" outputs as the manuscript jp-2024-05331h. Here, we are not concerned about the physics, which should be reproducible anytime anywhere, but we mean the computation: sampling the exact same set of sites in the exact same order. In practice, we expect your sampled sites to deviate after a few iterations. These are the reasons.
 
 * The RNGs in the scripts use a hard-coded seed, so the scripts reproduce the same behaviors each time. However, CREST uses a new random seed each time, finding different candidate conformers.
 
-* Due to the order-of-magnitude variations in the site-specific rates, the ML-predicted rates and sampling weights can be sensitive to the machine precision and architecture. For example, this code chooses different sites on computers with Intel CPUs vs. AMD CPUs. The differences arise the 15th decimal place at first but then propagate to more significant digits.
+* Due to the order-of-magnitude variations in the site-specific rates, the ML-predicted rates and sampling weights can be sensitive to the machine precision and architecture. For example, this code chooses different sites on computers with Intel vs. AMD CPUs. The differences arise the 15th decimal place at first but then propagate to more significant digits.
 
 ## Directories
 
