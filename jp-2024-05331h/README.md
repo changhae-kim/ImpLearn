@@ -2,21 +2,18 @@
 
 These are the scripts and data which were used to run the calculations in the manuscript jp-2024-05331h.
 
-1. The subdirectory `slab_models` contains the atomistic silica slab models of Thompson and coworkers (https://doi.org/10.1021/acs.chemmater.1c04016).
-
-2. The subdirectory `templates` contains the template geometries of the intermediates and transition states.
-
-3. The script `preprocess.py` performs three tasks required prior to the importance learning iterations: (a) carve silanol pairs out of the slab models, (b) sort the silanol pairs into vicinal/non-vicinal/other, and (c) paste the template geometries onto the sites. Note that each task is implemented as a code block which interacts with the other tasks only through file read/write. Hence, you can run one task at a time by commenting out the other code blocks
-
-4. The script `main.py` performs the importance learning iterations.
-
-5. The script `tools.py` defines the functions to be used in `main.py`.
-
-6. The script `imgfrq.py` can be used to detect Gaussian outputs with wrong numbers of imaginary frequencies.
 
 ## How to Run the Scripts
 
-1. In order to run the scripts, you need to create a number of subdirectories:
+These are the step-by-step instructions to run the scripts and redo the calculations in the manuscript jp-2024-05331h, with some caveats to be specified later. The instructions assume that you are considering a Phillips catalyst grafted at 473.15 K.
+
+1. Clone this repository to your home and then go into it:
+```
+git clone https://github.com/changhae-kim/ImpLearn
+cd ImpLearn/jp-2024-05331h
+```
+
+2. Create the subdirectories:
 ```
 mkdir \
     silanols \
@@ -31,15 +28,49 @@ mkdir \
     kernel_vicinal_wb97xd_tzvp_f321g_prep473K
 ```
 
-2. Run the script `preprocess.py`:
+3. Prepare the sites. The script can take several minutes to execute. As explained below, you can divide the execution of this script into three stages, or run the entire script at once.
 ```
 python preprocess.py
 ```
-The script should take several minutes to execute. As described earlier, you can divide the execution of this script into three stages, or run the entire script at once.
 
-3. 
+4. Initiate the importance learning iteration. The script generates CREST inputs in the subdirectory `crest_vicinal`. Run these CREST jobs.
+```
+python main.py 473.15 0 -
+```
+
+5. Generate the xTB inputs. The script generates xTB inputs in the subdirectory `xTB_vicinal`. Run these xTB jobs.
+```
+python main.py 473.15 0 c
+```
+
+6. Generate the Gaussian inputs. The script generates Gaussian inputs in the subdirectory `gaussian_vicinal_wb97xd_tzvp_f321g`. Run these Gaussian jobs. For site-adsorbate complexes, compute the counterpoise corrections on the optimized geometries. Keep the inputs and outputs in the subsubdirectory `gaussian_vicinal_wb97xd_tzvp_f321g/bsse_sp`.
+```
+python main.py 473.15 0 cx
+```
+
+7. Train the ML models and then predict on the site ensemble. Based on the site-averaged rates, you can decide whether to do another iteration.
+```
+python main.py 473.15 0 cxgk
+```
+
+8. Initiate the next importance learning iteration. Then, repeat the above steps.
+```
+python main.py 473.15 1 -
+```
 
 
+## Directory
 
+These are the descriptions of the subdirectories and scripts in this directory.
 
+1. The subdirectory `slab_models` contains the atomistic silica slab models of Thompson and coworkers (https://doi.org/10.1021/acs.chemmater.1c04016).
 
+2. The subdirectory `templates` contains the template geometries of the intermediates and transition states.
+
+3. The script `preprocess.py` performs three tasks required prior to the importance learning iterations: (a) carve silanol pairs out of the slab models, (b) sort the silanol pairs into vicinal/non-vicinal/other, and (c) paste the template geometries onto the sites. Note that each task is implemented as a code block which interacts with the other tasks only through file read/write. Hence, you can run one task at a time by commenting out the other code blocks
+
+4. The script `main.py` performs the importance learning iterations. Because CREST, xTB, and Gaussian jobs can take a long time, the script is designed to generate the input files and then terminate. You can run these jobs on an HPC cluster, etc. Then, rerun the script to generate the next set of input files. You need to provide the script: (a) the grafting temperature in Kelvins, (b) the iteration number, and (c) the progress within the iteration. For example, suppose that you are considering a Phillips catalyst grafted at 473.15K, and you finished the xTB pre-optimization for the third iteration. Then, you can obtain the input files for the Gaussian optimization by executing: `python main.py 473.15 3 cx`.
+
+5. The script `tools.py` defines the functions to be used in `main.py`.
+
+6. The script `imgfrq.py` can be used to detect Gaussian outputs with wrong numbers of imaginary frequencies.
