@@ -4,8 +4,6 @@ This is an implementation of the importance learning algorithm, as presented in 
 
 ## Directories
 
-These are the descriptions of the subdirectories.
-
 1. The directory `ImpLearn` contains codes which define the classes and functions to be used in importance learning. This is a library which you can use to set up your own scripts for importance learning.
 
 2. The directory `jp-2024-05331h` contains the scripts which were used to run the calculations in the manuscript jp-2024-05331h. This is an example which you can refer to when you want to run your own importance learning calculations.
