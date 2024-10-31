@@ -1,6 +1,6 @@
 # ImpLearn
 
-This is an implementation of the importance learning algorithm, as presented in https://doi.org/10.1021/acs.jpcc.4c05331. For theoretical and historical backgrounds, you can also refer to https://doi.org/10.1039/C9RE00356H, https://doi.org/10.1063/5.0037450, and https://doi.org/10.1021/acs.jctc.3c00160.
+This is an implementation of the importance learning algorithm, as presented in https://doi.org/10.1021/acs.jpcc.4c05331. For theoretical and historical backgrounds, you can also refer to earlier works of Peters and coworkers (https://doi.org/10.1039/C9RE00356H, https://doi.org/10.1063/5.0037450, and https://doi.org/10.1021/acs.jctc.3c00160).
 
 ## Directories
 
