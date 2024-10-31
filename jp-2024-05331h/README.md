@@ -1,10 +1,10 @@
 # Phillips Catalyst
 
-These are the scripts and data which were used to run the calculations in the manuscript jp-2024-05331h.
+These are the scripts and data which were used to run the calculations in https://doi.org/10.1021/acs.jpcc.4c05331.
 
 ## How to Run the Scripts
 
-These are the step-by-step instructions to run the scripts and redo the calculations in the manuscript jp-2024-05331h, with some caveats to be specified below. The instructions assume that you are considering a Phillips catalyst grafted at 473.15 K.
+These are the step-by-step instructions to run the scripts and redo the calculations in https://doi.org/10.1021/acs.jpcc.4c05331, with some caveats to be specified below. The instructions assume that you are considering a Phillips catalyst grafted at 473.15 K.
 
 1. Clone this repository to your home and then go into it:
 ```
@@ -59,7 +59,7 @@ python main.py 473.15 1 -
 
 ## Caveats
 
-In principle, you might expect to reproduce the "exact same" outputs as the manuscript jp-2024-05331h. Here, we are not concerned about the physics, which should be reproducible anytime anywhere, but we mean the computation: sampling the exact same set of sites in the exact same order. In practice, we expect your sampled sites to deviate after a few iterations. These are the reasons.
+In principle, you might expect to reproduce the "exact same" outputs as https://doi.org/10.1021/acs.jpcc.4c05331. Here, we are not concerned about the physics, which should be reproducible anytime anywhere, but we mean the computation: sampling the exact same set of sites in the exact same order. In practice, we expect your sampled sites to deviate after a few iterations. These are the reasons.
 
 * The RNGs in the scripts use a hard-coded seed, so the scripts reproduce the same behaviors each time. However, CREST uses a new random seed each time, finding different candidate conformers.
 
