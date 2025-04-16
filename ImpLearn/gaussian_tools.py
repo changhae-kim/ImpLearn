@@ -136,6 +136,39 @@ def read_irc(file_path):
 
     return energies, clusters
 
+def read_easymecp(file_path):
+
+    energy1 = 0.0
+    energy2 = 0.0
+    cluster = None
+
+    f = open(file_path, 'rt')
+    status = 0
+    for line in f:
+        if status == 0:
+            if line.strip().startswith('Initial Geom') or line.strip().startswith('Geometry at'):
+                atoms = []
+                coords = []
+                status = 1
+            elif line.strip().startswith('The MECP Opt'):
+                cluster = Atoms(atoms, coords)
+        elif status == 1:
+            if line.strip() == '':
+                status = 2
+            else:
+                atoms.append(int(line.split()[0]))
+                coords.append([float(x) for x in line.split()[-3:]])
+        elif status == 2:
+            if line.startswith('Energy of First State'):
+                energy1 = float(line.split()[-1])
+                status = 3
+        elif status == 3:
+            if line.startswith('Energy of Second State'):
+                energy2 = float(line.split()[-1])
+                status = 0
+
+    return energy1, energy2, cluster
+
 def read_orbitals(file_path):
 
     sf = 6
