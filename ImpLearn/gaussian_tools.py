@@ -293,7 +293,7 @@ def read_thermochem(file_path, temp=None, pressure=None, vib_cutoff=0.0,
             if line.strip().startswith('SCF Done:'):
                 E_e = float(line.split()[4])
             elif line.strip().startswith('Counterpoise corrected energy ='):
-                energy = float(line.split()[-1])
+                E_e = float(line.split()[-1])
             elif line.strip().startswith('Harmonic frequencies'):
                 status = 1
         elif status == 1:
@@ -375,7 +375,7 @@ def read_thermochem_salman(file_path, new_constants=False):
             if line.strip().startswith('SCF Done:'):
                 E_e = float(line.split()[4])
             elif line.strip().startswith('Counterpoise corrected energy ='):
-                energy = float(line.split()[-1])
+                E_e = float(line.split()[-1])
             elif line.strip().startswith('Harmonic frequencies'):
                 status = 1
         elif status == 1:
